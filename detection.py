@@ -3,157 +3,125 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import sys
-
+import math
 
 if __name__ == '__main__':
-    img = cv2.imread('frame0_Tag0_grey.png', 0)
+    # img = cv2.imread('frame0_Tag0_grey.png', 0)
+    img = cv2.imread('frame0_Tag1_grey.png', 0)
+    original = img.copy()
+    original2 = img.copy()
 
     thresh = simple_threshold.adaptive_thresh_erode((img))
-
-    # plt.subplot(122),plt.imshow(thresh, cmap = 'gray')
-    # plt.show()
-
 
     # convert to contours
     contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
 
 
-    img = np.zeros(shape=img.shape, dtype=np.uint8)
     # img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)  # add this line
 
+    ''' Obtain mask of biggest contour (first one after sorting by area) '''
     contours = sorted(contours, key=cv2.contourArea, reverse=True)[:10]
-
-    # # loop over our contours
-    # colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
-    # for idx, c in enumerate(contours):
-    #     current_color = colors[idx % 3]
-    #     cv2.drawContours(img, [c], -1, current_color, thickness=cv2.FILLED)
-    #     cv2.imshow("Game Boy Screen", img)
-    #     cv2.waitKey(0)
-
-    # Obtain mask of biggest contour
-    # paper = np.zeros(img.shape, dtype=np.uint8)
-    # cv2.drawContours(paper, contours=contours, contourIdx=0, color=255, thickness=-1)
-    # paper_pixelpoints = cv2.findNonZero(mask)
-    # mask = np.multiply(paper_pixelpoints, mask)
-    # paper_mask = np.where(paper>0, 1, 0).astype(np.uint8)
 
     # todo track centroid between images, verify movement was not too much
 
-    # Get all contours within big mask
-
+    '''Get all contours within big contour mask'''
     # convert all to np arrays 0 to 1
     blank_slate = np.zeros(img.shape, dtype=np.uint8)
-    masks = [blank_slate] * len(contours) # list of contours as masks
-    # for idx, m in enumerate(masks):
-    #     plt.imshow(m,cmap='gray')
-    #     plt.show()
 
-    # for idx, c in enumerate(contours): # convert all contours to np arrays 0 to 1
-    #     cv2.drawContours(masks[idx], contours=[c], contourIdx=1, color=255, thickness=-1) # todo what does thickness do?
-
+    # get masks for all objects
+    masks = []
     for idx, c in enumerate(contours):
-        print(c)
-        print("next")
+        a = blank_slate.copy()
+        cv2.drawContours(a, contours, idx, 1, thickness=cv2.FILLED) # todo what does thickness do?
+        masks.append(a)
 
-
-    blank_slate0 = np.zeros(img.shape, dtype=np.uint8)
-    blank_slate1 = np.zeros(img.shape, dtype=np.uint8)
-    blank_slate2 = np.zeros(img.shape, dtype=np.uint8)
-    blank_slate3 = np.zeros(img.shape, dtype=np.uint8)
-    blank_slate4 = np.zeros(img.shape, dtype=np.uint8)
-
-
-    cv2.drawContours(blank_slate0, contours, 0, 210, thickness=cv2.FILLED)
-    cv2.drawContours(blank_slate1, contours, 1, 210, thickness=cv2.FILLED)
-    cv2.drawContours(blank_slate2, contours, 2, 210, thickness=cv2.FILLED)
-    cv2.drawContours(blank_slate3, contours, 3, 210, thickness=cv2.FILLED)
-    cv2.drawContours(blank_slate4, contours, 4, 210, thickness=cv2.FILLED)
-    # cv2.drawContours(masks[4], [contours[4]], -1, 210, thickness=cv2.FILLED)
-
-    plt.imshow(blank_slate0)
-    plt.show()
-    plt.close()
-
-    plt.imshow(blank_slate1)
-    plt.show()
-    plt.close()
-
-    plt.imshow(blank_slate2)
-    plt.show()
-    plt.close()
-
-    sys.exit()
-
-    # masks = list(map(lambda x: cv2.cvtColor(x, cv2.COLOR_GRAY2BGR), masks))  # add this line
-    colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
-    for idx, c in enumerate(contours):
-        # current_color = colors[idx % 3]
-        current_color = colors[0]
-        cv2.drawContours(masks[idx], [c], -1, current_color, thickness=cv2.FILLED)
-        plt.imshow(masks[idx])
-        plt.show()
-        plt.close()
-        # cv2.imshow("Game Boy Screen", masks[idx])
-        # cv2.waitKey(0)
-
-
-
-
-
-
-
-
-
-    sys.exit()
-
-
-
-
-
-
-
-
-    for idx, m in enumerate(masks):
-        plt.imshow(m,cmap='gray')
-        plt.show()
     # get union, compare to area of original shape
-    areas = [cv2.contourArea(c) for c in contours]
-
-    for idx, m in enumerate(masks):
-        plt.imshow(m,cmap='gray')
-        plt.show()
+    areas = list(map(lambda x: np.count_nonzero(x), masks))
 
     union_masks = [np.multiply(m,masks[0]) for idx, m in enumerate(masks)]
 
-    union_masks_image = list(map(lambda x: np.where(x>0, 255, 0).astype(np.uint8),union_masks))
-
+    union_masks_image = list(map(lambda x: np.where(x>0, 255, 0).astype(np.uint8),union_masks)) # show masks as image
     for idx, c in enumerate(union_masks_image):
-        plt.imshow(c,cmap='gray')
-        plt.show()
-
-        # cv2.destroyAllWindows()
-        # cv2.imshow("union masks", blank_slate)
-        # cv2.imshow("union masks", union_masks_image[idx])
-        # cv2.waitKey(0)
-
+        pass
+        # plt.imshow(c,cmap='gray')
+        # plt.show()
 
     union_areas = list(map(lambda x: np.count_nonzero(x), union_masks))
 
+    # if size of union is same as original shape, keep. else reject.
+    difference_area  = [abs(areas[idx]-union_areas[idx]) for idx, val in enumerate(areas)]
+    for idx, val in enumerate(masks):
+        if difference_area[idx] > 0:
+            masks.pop(idx)
+            contours.pop(idx)
+
+    ''' Pick second largest body'''
+
+    ar_mask = masks[1]
+    ar_contour = contours[1]
+
+    ''' grow/dilate '''
+    kernel = np.ones((5, 5), np.uint8)
+    dilation = cv2.dilate(ar_mask, kernel, iterations=1)
+
+    '''run corner detection'''
+
+    corners = cv2.goodFeaturesToTrack(img, 25, 0.01, 10)
+    corners = np.int0(corners)
+
+    for i in corners:
+        x, y = i.ravel()
+        cv2.circle(img, (x, y), 3, 255, -1)
+
+    plt.imshow(img), plt.show()
+
+    ''' mask corners with AR mask '''
+    valid_corners = []
+    for i in corners:
+        x, y = i.ravel()
+        if ar_mask[y,x] > 0:
+            valid_corners.append(i)
+
+    ''' Display image with valid corners '''
+    for i in valid_corners:
+        x, y = i.ravel()
+        cv2.circle(original, (x, y), 3, 100, -1)
+
+    plt.imshow(original), plt.show()
+
+    ''' Pick 4 points furthest from centroid of ar mask'''
+
+    # calculate moments of binary image
+    M = cv2.moments(ar_mask)
+
+    # calculate x,y coordinate of center
+    cX = int(M["m10"] / M["m00"])
+    cY = int(M["m01"] / M["m00"])
+
+    distances = []
+    for i in valid_corners:
+        x, y = i.ravel()
+        d = math.sqrt( (y - cY)**2 + (x - cX)**2 )
+        distances.append(d)
+
+    # distances, valid_corners = (list(t) for t in zip(*sorted(zip(distances, valid_corners))))
+
+    n_distances = np.array(distances)
+    n_valid_corners = np.array(valid_corners)
+    inds = n_distances.argsort()
+    sorted_n_valid_corners = n_valid_corners[inds]
+
+    best_corners = list( sorted_n_valid_corners.reshape(11, 2) )[::-1][0:4]
+
+    '''Display best 4 corners'''
+    # best_corners = valid_corners[::-1][0:4]
+    for i in best_corners:
+        x, y = i.ravel()
+        cv2.circle(original2, (x, y), 3, 0, -1)
+
+    plt.imshow(original2), plt.show()
 
 
-    aa=1
 
-
-    # if size of union is same as original shape, keep
-    # else reject
-
-    cv2.imshow("mask", paper_mask)
-    cv2.waitKey(0)
-
-    # paper_pixelpoints1 = np.nonzero(mask)
-    # cv2.imshow("mask no transpose", paper_pixelpoints1)
-
-    # pick largest body
     pass
 

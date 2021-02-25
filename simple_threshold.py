@@ -11,7 +11,7 @@ def adaptive_thresh_erode(img):
 
     plt.title('Input Image'), plt.xticks([]), plt.yticks([])
     # plt.imshow(th3, cmap = 'gray')
-    plt.subplot(121),plt.imshow(th3, cmap = 'gray')
+    plt.imshow(th3, cmap = 'gray')
     # plt.show()
 
     # kernel = np.ones((5,5),np.uint8)
