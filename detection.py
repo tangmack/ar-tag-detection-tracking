@@ -11,6 +11,7 @@ if __name__ == '__main__':
     # img = cv2.imread('frame0_Tag0_grey.png', 0)
     # img = cv2.imread('frame0_Tag1_grey.png', 0)
     img = cv2.imread('frame0_Tag1_color.png', 0)
+    gray_original = img.copy()
     color_img = cv2.imread('frame0_Tag1_color.png',cv2.COLOR_BGR2RGB)
     original = img.copy()
     original2 = img.copy()
@@ -135,7 +136,7 @@ if __name__ == '__main__':
 
     pass
 
-    pixel_distance = 500.0
+    pixel_distance = 200.0
     w1c = np.array([0.0, 0.0])
     w2c = np.array([pixel_distance, 0.0])
     w3c = np.array([pixel_distance, pixel_distance]) # found error, swapped w3 and w4 here!
@@ -200,6 +201,27 @@ if __name__ == '__main__':
     ccs_test_point = P.dot(  wcs_test_point )
     ccs_test_point_divided = ccs_test_point / ccs_test_point[2,0]
 
+    ''' Back project AR tag (wcs) onto image sensor (ccs)'''
+    # plt.imshow(ar_mask), plt.show()
+
+    erosion = cv2.erode(ar_mask, kernel, iterations=1)
+    ar_contour_eroded_within = np.where(erosion>0)
+    ar_contour_eroded_within = np.hstack((ar_contour_eroded_within[1].reshape(-1,1),ar_contour_eroded_within[0].reshape(-1,1)))
+
+    Pinv = np.linalg.pinv(P)
+    # ar_contour is an np array of shape (274,1,2) in row,col
+
+    ar_tag = np.zeros(shape=(201,201),dtype=np.uint8)
+    # for colrow in ar_contour:
+    for colrow in ar_contour_eroded_within:
+        # colrow_projective = np.
+        # np.array([j, i, 0, 1]).reshape(-1, 1)
+        # pix_projected = Pinv.dot( np.vstack( (colrow.reshape(-1,1), 1) ) )
+        pix_projected = np.linalg.inv(H).dot( np.vstack( (colrow.reshape(-1,1), 1) ) )
+        pix_projected_normalized = pix_projected / pix_projected[2,0]
+        ar_tag[round(float(pix_projected_normalized[1])), round(float(pix_projected_normalized[0]))] = gray_original[colrow.reshape(-1,1)[1], colrow.reshape(-1,1)[0]]  # change color at projected row,col
+
+    plt.imshow(ar_tag,cmap='gray'), plt.show()
 
     '''Draw Cube Vertices'''
     # # convert numpy array to tuple
@@ -227,6 +249,6 @@ if __name__ == '__main__':
                 color_original[round(float(pixel_projected_normalized[1])),round(float(pixel_projected_normalized[0]))] = cartoon[i,j] # change color at projected row,col
 
     # plt.imshow(color_original), plt.show()
-    plt.imshow(cv2.cvtColor(color_original, cv2.COLOR_BGR2RGB)), plt.show()
+    # plt.imshow(cv2.cvtColor(color_original, cv2.COLOR_BGR2RGB)), plt.show()
 
     pass
