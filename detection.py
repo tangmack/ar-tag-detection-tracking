@@ -199,10 +199,22 @@ if __name__ == '__main__':
 
 
     '''Draw Cube Vertices'''
-    cv2.circle(original3, (ccs_test_point_divided[0], ccs_test_point_divided[1]), 3, (0, 180, 0), -1)
+    # convert numpy array to tuple
+    dist = 200
+    cube_points_low = [[0,0,0,1],[dist,0,0,1],[dist,dist,0,1],[0,dist,0,1]]
+    cube_points_high = [[0,0,-dist,1],[dist,0,-dist,1],[dist,dist,-dist,1],[0,dist,-dist,1]]
+    cube_points = cube_points_low + cube_points_high # concatenate lists
+    # put into numpy array
+    cube_points_np = [np.array(elem).reshape(-1,1) for elem in cube_points]
+    cube_points_projected = [P.dot(elem) for elem in cube_points_np]
+    cube_points_normalized = [elem / elem[2,0] for elem in cube_points_projected]
+
+    for point in cube_points_normalized:
+        cv2.circle(original3, (point[0], point[1]), 3, (0, 180, 0), -1)
+
+    # cv2.circle(original3, (ccs_test_point_divided[0], ccs_test_point_divided[1]), 3, (0, 180, 0), -1)
     plt.imshow(original3), plt.show()
 
-    # cube_points = []
 
 
     pass
