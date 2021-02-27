@@ -9,10 +9,12 @@ import homography_svd
 
 if __name__ == '__main__':
     # img = cv2.imread('frame0_Tag0_grey.png', 0)
-    img = cv2.imread('frame0_Tag1_grey.png', 0)
+    # img = cv2.imread('frame0_Tag1_grey.png', 0)
+    img = cv2.imread('frame0_Tag1_color.png', 0)
+    color_img = cv2.imread('frame0_Tag1_color.png',cv2.COLOR_BGR2RGB)
     original = img.copy()
     original2 = img.copy()
-    original3 = img.copy()
+    color_original = color_img.copy()
 
     thresh = simple_threshold.adaptive_thresh_erode((img))
 
@@ -133,10 +135,11 @@ if __name__ == '__main__':
 
     pass
 
+    pixel_distance = 500.0
     w1c = np.array([0.0, 0.0])
-    w2c = np.array([200.0, 0.0])
-    w3c = np.array([200.0, 200.0]) # found error, swapped w3 and w4 here!
-    w4c = np.array([0.0, 200.0])
+    w2c = np.array([pixel_distance, 0.0])
+    w3c = np.array([pixel_distance, pixel_distance]) # found error, swapped w3 and w4 here!
+    w4c = np.array([0.0, pixel_distance])
 
     ''' Compute the Homography Matrix'''
     # H = homography.computeHomography(x1c[0], x1c[1], x2c[0], x2c[1], x3c[0], x3c[1], x4c[0], x4c[1], w1c[0], w1c[1], w2c[0], w2c[1], w3c[0], w3c[1], w4c[0], w4c[1]).reshape(3,3)
@@ -199,8 +202,8 @@ if __name__ == '__main__':
 
 
     '''Draw Cube Vertices'''
-    # convert numpy array to tuple
-    dist = 200
+    # # convert numpy array to tuple
+    dist = pixel_distance # cube edge length, measured in pixels
     cube_points_low = [[0,0,0,1],[dist,0,0,1],[dist,dist,0,1],[0,dist,0,1]]
     cube_points_high = [[0,0,-dist,1],[dist,0,-dist,1],[dist,dist,-dist,1],[0,dist,-dist,1]]
     cube_points = cube_points_low + cube_points_high # concatenate lists
@@ -210,11 +213,20 @@ if __name__ == '__main__':
     cube_points_normalized = [elem / elem[2,0] for elem in cube_points_projected]
 
     for point in cube_points_normalized:
-        cv2.circle(original3, (point[0], point[1]), 3, (0, 180, 0), -1)
+        cv2.circle(color_original, (point[0], point[1]), 3, (0, 180, 0), -1)
 
-    # cv2.circle(original3, (ccs_test_point_divided[0], ccs_test_point_divided[1]), 3, (0, 180, 0), -1)
-    plt.imshow(original3), plt.show()
+    # cv2.circle(original3, (ccs_test_point_divided[0], ccs_test_point_divided[1]), 3, (0, 180, 0), -1) # draw one point
+    # plt.imshow(color_original), plt.show()
 
+    '''Project cartoon image onto AR tag'''
+    cartoon = cv2.imread('testudo.png',cv2.COLOR_BGR2RGB)
+    for i in range(0,cartoon.shape[0]):
+        for j in range(0,cartoon.shape[1]):
+                pixel_projected = P.dot( np.array([j,i,0,1]).reshape(-1,1) )
+                pixel_projected_normalized = pixel_projected / pixel_projected[2,0]
+                color_original[round(float(pixel_projected_normalized[1])),round(float(pixel_projected_normalized[0]))] = cartoon[i,j] # change color at projected row,col
 
+    # plt.imshow(color_original), plt.show()
+    plt.imshow(cv2.cvtColor(color_original, cv2.COLOR_BGR2RGB)), plt.show()
 
     pass
