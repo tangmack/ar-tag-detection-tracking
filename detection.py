@@ -12,6 +12,7 @@ if __name__ == '__main__':
     img = cv2.imread('frame0_Tag1_grey.png', 0)
     original = img.copy()
     original2 = img.copy()
+    original3 = img.copy()
 
     thresh = simple_threshold.adaptive_thresh_erode((img))
 
@@ -154,37 +155,6 @@ if __name__ == '__main__':
 
 
 
-
-
-
-
-    # above portion working ^^^
-
-
-
-
-
-
-
-
-
-
-    ''';lkj;lkj'''
-    k_mat = np.array(
-        [[1406.08415449821, 0, 0], [2.20679787308599, 1417.99930662800, 0], [1014.13643417416, 566.347754321696, 1]]).T
-    inv_k_mat = np.linalg.inv(k_mat)
-    b_mat = np.matmul(inv_k_mat, H)
-    b1_ = b_mat[:, 0].reshape(3, 1)
-    b2_ = b_mat[:, 1].reshape(3, 1)
-    r3_ = np.cross(b_mat[:, 0], b_mat[:, 1])
-    b3_ = b_mat[:, 2].reshape(3, 1)
-    scalar = 2 / (np.linalg.norm(inv_k_mat.dot(b1_)) + np.linalg.norm(inv_k_mat.dot(b2_)))
-    t_ = scalar * b3_
-    r1_ = scalar * b1_
-    r2_ = scalar * b2_
-    r3_ = (r3_ * scalar * scalar).reshape(3, 1)
-    r_mat = np.concatenate((r1_, r2_, r3_), axis=1)
-
     ''' Compute B = [r1 r2 t] '''
     K = np.array([[1406.08415449821, 0, 0], [2.20679787308599, 1417.99930662800, 0], [1014.13643417416, 566.347754321696, 1]]).T
 
@@ -222,12 +192,17 @@ if __name__ == '__main__':
     P = K.dot( np.hstack((R, t)) )
 
     '''Use xc = P xw'''
-    wcs_test_point = np.array([0,0,0,1]).reshape(-1,1)
+    wcs_test_point = np.array([0,200,-200,1]).reshape(-1,1)
 
     ccs_test_point = P.dot(  wcs_test_point )
     ccs_test_point_divided = ccs_test_point / ccs_test_point[2,0]
 
 
+    '''Draw Cube Vertices'''
+    cv2.circle(original3, (ccs_test_point_divided[0], ccs_test_point_divided[1]), 3, (0, 180, 0), -1)
+    plt.imshow(original3), plt.show()
+
+    # cube_points = []
 
 
     pass
