@@ -221,7 +221,10 @@ if __name__ == '__main__':
         pix_projected_normalized = pix_projected / pix_projected[2,0]
         ar_tag[round(float(pix_projected_normalized[1])), round(float(pix_projected_normalized[0]))] = gray_original[colrow.reshape(-1,1)[1], colrow.reshape(-1,1)[0]]  # change color at projected row,col
 
-    plt.imshow(ar_tag,cmap='gray'), plt.show()
+    closing_kernel_size = 5
+    closing_kernel = np.ones((closing_kernel_size, closing_kernel_size), np.uint8)
+    closing = cv2.morphologyEx(ar_tag, cv2.MORPH_CLOSE, closing_kernel)
+    plt.imshow(closing,cmap='gray'), plt.show()
 
     '''Draw Cube Vertices'''
     # # convert numpy array to tuple
