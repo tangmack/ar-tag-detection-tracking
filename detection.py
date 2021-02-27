@@ -7,29 +7,6 @@ import math
 import homography
 import homography_svd
 
-
-# def get_krt_matrix(inv_h):
-#     """
-#     get matrices to transform 3-D points
-#     :param inv_h: inverse homography matrix
-#     :return: a tuple of 3 transformation matrices
-#     """
-#     k_mat = np.array(
-#         [[1406.08415449821, 0, 0], [2.20679787308599, 1417.99930662800, 0], [1014.13643417416, 566.347754321696, 1]]).T
-#     inv_k_mat = np.linalg.inv(k_mat)
-#     b_mat = np.matmul(inv_k_mat, inv_h)
-#     b1 = b_mat[:, 0].reshape(3, 1)
-#     b2 = b_mat[:, 1].reshape(3, 1)
-#     r3 = np.cross(b_mat[:, 0], b_mat[:, 1])
-#     b3 = b_mat[:, 2].reshape(3, 1)
-#     scalar = 2 / (np.linalg.norm(inv_k_mat.dot(b1)) + np.linalg.norm(inv_k_mat.dot(b2)))
-#     t = scalar * b3
-#     r1 = scalar * b1
-#     r2 = scalar * b2
-#     r3 = (r3 * scalar * scalar).reshape(3, 1)
-#     r_mat = np.concatenate((r1, r2, r3), axis=1)
-#     return r_mat, t
-
 if __name__ == '__main__':
     # img = cv2.imread('frame0_Tag0_grey.png', 0)
     img = cv2.imread('frame0_Tag1_grey.png', 0)
