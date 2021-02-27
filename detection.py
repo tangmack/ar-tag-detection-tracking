@@ -224,7 +224,18 @@ if __name__ == '__main__':
     closing_kernel_size = 5
     closing_kernel = np.ones((closing_kernel_size, closing_kernel_size), np.uint8)
     closing = cv2.morphologyEx(ar_tag, cv2.MORPH_CLOSE, closing_kernel)
-    plt.imshow(closing,cmap='gray'), plt.show()
+    # plt.imshow(closing,cmap='gray'), plt.show()
+
+    ''' Threshold '''
+    # th_ar_tag = cv2.adaptiveThreshold(closing, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 41, 5)
+    # plt.imshow(th_ar_tag,cmap='gray'), plt.show()
+
+    # Applying Otsu's method setting the flag value into cv.THRESH_OTSU.
+    # Use a bimodal image as an input.
+    # Optimal threshold value is determined automatically.
+    otsu_threshold, image_result = cv2.threshold(closing, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    plt.imshow(image_result,cmap='gray'), plt.show()
+
 
     '''Draw Cube Vertices'''
     # # convert numpy array to tuple
