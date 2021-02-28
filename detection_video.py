@@ -9,6 +9,16 @@ import homography
 import homography_svd
 
 
+def removearray(L,arr):
+    ind = 0
+    size = len(L)
+    while ind != size and not np.array_equal(L[ind],arr):
+        ind += 1
+    if ind != size:
+        L.pop(ind)
+    else:
+        raise ValueError('array not found in list.')
+
 
 if __name__ == '__main__':
     use_video = True # video or single image
@@ -19,9 +29,9 @@ if __name__ == '__main__':
 
     if use_video == True:
         # cap = cv2.VideoCapture('Tag0.mp4')
-        # cap = cv2.VideoCapture('Tag1.mp4')
+        cap = cv2.VideoCapture('Tag1.mp4')
         # cap = cv2.VideoCapture('Tag2.mp4')
-        cap = cv2.VideoCapture('multipleTags.mp4')
+        # cap = cv2.VideoCapture('multipleTags.mp4')
     else:
         single_image = cv2.imread('frame0_Tag1_color.png', 0)
 
@@ -33,7 +43,7 @@ if __name__ == '__main__':
             try:
                 ret, frame = cap.read()
                 img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                color_img = frame.copy()
+                # color_img = frame.copy()
             except:
                 print("frame_count: ", frame_count)
                 break
@@ -44,28 +54,104 @@ if __name__ == '__main__':
 
         '''########################################### Begin Pipeline ##################################'''
         thresh = otsu_threshold.adaptive_thresh_erode(img)
+        # # Purely for visualization
         # cv2.imshow('frame', thresh)
         # if cv2.waitKey(1) & 0xFF == ord('q'):
         #     break
 
+        # continue
+
+        '''################################### Get at least white paper contours (and others) ###########################################'''
         '''convert to contours'''
         contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
-        # img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)  # add this line
 
         ''' Obtain mask of biggest contour (first one after sorting by area) '''
-        contours = sorted(contours, key=cv2.contourArea, reverse=True)[:20]
+        contours = sorted(contours, key=cv2.contourArea, reverse=True)[:6]
 
-        # visualize contours in color
+        # # Purely for visualization: visualize contours in color
+        # color_img_initial_contours = frame.copy()
+        # for idx, c in enumerate(contours):
+        #     cur_color = colors[idx%3]
+        #     cv2.drawContours(color_img_initial_contours, contours, idx, cur_color, thickness=cv2.FILLED)
+        # cv2.imshow('frame', color_img_initial_contours)
+        # # cv2.waitKey(0)
+        # if cv2.waitKey(1) & 0xFF == ord('q'):
+        #     break
 
-        for idx, c in enumerate(contours):
-            cur_color = colors[idx%3]
-            cv2.drawContours(color_img, contours, idx, cur_color, thickness=cv2.FILLED)  # todo what does thickness do?
+        # continue
 
-        cv2.imshow('frame', color_img)
+        '''#############################################################################################'''
+        # todo for 3 ar tags, just pick 3 biggest instead of THE biggest, and then do same procedure FOR EACH
+        # todo track centroid between images, verify movement was not too much
+
+        '''Get all contours within big contour mask (faster)'''
+        for c in contours:
+            for point in c:
+                result = cv2.pointPolygonTest(contours[0], (point[0][0],point[0][1]), False)
+                if result == -1: # remove contour
+                    removearray(contours,c)
+                    break
+
+        # Purely visualization:
+        color_img_only_within_paper_contours = frame.copy()
+        cv2.drawContours(color_img_only_within_paper_contours, contours, 1, colors[2], thickness=cv2.FILLED)
+        print(frame_count)
+        cv2.imshow('frame', color_img_only_within_paper_contours)
+        ## cv2.waitKey(0)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
+        # ''' Pick second largest remaining body'''
+        # ar_contour = contours[1]
+        # ar_mask = masks[1]
 
+
+        # '''Get all contours within big contour mask'''
+        # # convert all to np arrays 0 to 1
+        # blank_slate = np.zeros(img.shape, dtype=np.uint8)
+        #
+        # # get masks for all contours, images with 1 where contour, 0 everywhere else
+        # masks = []
+        # for idx, c in enumerate(contours):
+        #     a = blank_slate.copy()
+        #     cv2.drawContours(a, contours, idx, 1, thickness=cv2.FILLED)  # todo what does thickness do?
+        #     masks.append(a)
+        #
+        # # get area of original contours
+        # areas = list(map(lambda x: np.count_nonzero(x), masks))
+        #
+        # # get union, aka multiply mask by large paper mask, zero out anywhere not overlapping
+        # union_masks = [np.multiply(m, masks[0]) for idx, m in enumerate(masks)]
+        #
+        # # Purely for visualization:
+        # # union_masks_image = list(
+        # #     map(lambda x: np.where(x > 0, 255, 0).astype(np.uint8), union_masks))  # show masks as image
+        # # for idx, c in enumerate(union_masks_image):
+        # #     pass
+        # #     plt.imshow(c, cmap='gray')
+        # #     plt.show()
+        #
+        # # get area of unioned contours
+        # union_areas = list(map(lambda x: np.count_nonzero(x), union_masks))
+        #
+        # # if size of union is same as original shape, keep. else reject.
+        # difference_area = [abs(areas[idx] - union_areas[idx]) for idx, val in enumerate(areas)]
+        # for idx, val in enumerate(masks):
+        #     if difference_area[idx] > 0:
+        #         masks.pop(idx)
+        #         contours.pop(idx)
+        #
+        # ''' Pick second largest remaining body'''
+        #
+        # ar_mask = masks[1]
+        # ar_contour = contours[1]
+        #
+        # # Purely visualization:
+        # color_img_only_within_paper_contours = frame.copy()
+        # cv2.drawContours(color_img_only_within_paper_contours, contours, 1, colors[2], thickness=cv2.FILLED)
+        # cv2.imshow('frame', color_img_only_within_paper_contours)
+        # if cv2.waitKey(1) & 0xFF == ord('q'):
+        #     break
 
         frame_count += 1
 

@@ -35,24 +35,27 @@ if __name__ == '__main__':
     # convert all to np arrays 0 to 1
     blank_slate = np.zeros(img.shape, dtype=np.uint8)
 
-    # get masks for all objects
+    # get masks for all contours, images with 1 where contour, 0 everywhere else
     masks = []
     for idx, c in enumerate(contours):
         a = blank_slate.copy()
         cv2.drawContours(a, contours, idx, 1, thickness=cv2.FILLED) # todo what does thickness do?
         masks.append(a)
 
-    # get union, compare to area of original shape
+    # get area of original contours
     areas = list(map(lambda x: np.count_nonzero(x), masks))
 
+    # get union, aka multiply mask by large paper mask, zero out anywhere not overlapping
     union_masks = [np.multiply(m,masks[0]) for idx, m in enumerate(masks)]
 
+    # Purely for visualization:
     union_masks_image = list(map(lambda x: np.where(x>0, 255, 0).astype(np.uint8),union_masks)) # show masks as image
     for idx, c in enumerate(union_masks_image):
         pass
         plt.imshow(c,cmap='gray')
         plt.show()
 
+    # get area of unioned contours
     union_areas = list(map(lambda x: np.count_nonzero(x), union_masks))
 
     # if size of union is same as original shape, keep. else reject.
@@ -62,7 +65,7 @@ if __name__ == '__main__':
             masks.pop(idx)
             contours.pop(idx)
 
-    ''' Pick second largest body'''
+    ''' Pick second largest remaining body'''
 
     ar_mask = masks[1]
     ar_contour = contours[1]
