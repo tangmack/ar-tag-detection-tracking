@@ -120,7 +120,7 @@ def computeHomography(x1, x2, x3, x4, y1, y2, y3, y4, xp1, xp2, xp3, xp4, yp1, y
     # print(FinalCheck_builtin - C) # FinalCheck and C should be equal, because FinalCheck = C = SVD(C)
     # print(np.max(FinalCheck_builtin - C)) # should be very close to zero
 
-    print(x)
+    # print(x)
     return x
 
 if __name__ == '__main__':
