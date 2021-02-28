@@ -1,4 +1,5 @@
 import simple_threshold
+import otsu_threshold
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
@@ -303,6 +304,7 @@ if __name__ == '__main__':
         inner_binary.insert(0, inner_binary.pop()) # shift three times
         inner_binary.insert(0, inner_binary.pop())
         inner_binary.insert(0, inner_binary.pop())
+
 
     tag_id = ''.join(str(e) for e in inner_binary) # convert list to string
 

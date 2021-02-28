@@ -1,4 +1,5 @@
 import simple_threshold
+import otsu_threshold
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,27 +13,27 @@ import homography_svd
 if __name__ == '__main__':
     use_video = True # video or single image
     # single_image = cv2.imread('frame0_Tag0_grey.png', 0)
-    # single_image = cv2.imread('frame0_Tag1_grey.png', 0)
-    single_image = cv2.imread('frame0_Tag1_color.png', 0)
+    single_image = cv2.imread('frame0_Tag1_grey.png', 0)
+    # single_image = cv2.imread('frame0_Tag1_color.png', 0)
     single_color_image = cv2.imread('frame0_Tag1_color.png', cv2.COLOR_BGR2RGB)
 
     if use_video == True:
         # cap = cv2.VideoCapture('Tag0.mp4')
         # cap = cv2.VideoCapture('Tag1.mp4')
-        cap = cv2.VideoCapture('Tag2.mp4')
-        # cap = cv2.VideoCapture('multipleTags.mp4')
+        # cap = cv2.VideoCapture('Tag2.mp4')
+        cap = cv2.VideoCapture('multipleTags.mp4')
     else:
         single_image = cv2.imread('frame0_Tag1_color.png', 0)
 
 
-
+    colors = [(255,0,0), (0,255,0), (0,0,255)]
     frame_count = 0
     while (cap.isOpened()):
         if use_video == True:
             try:
                 ret, frame = cap.read()
                 img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                color_img = frame
+                color_img = frame.copy()
             except:
                 print("frame_count: ", frame_count)
                 break
@@ -40,10 +41,31 @@ if __name__ == '__main__':
             img = single_image
             color_img = single_color_image
 
-        thresh = simple_threshold.adaptive_thresh_erode(img)
-        cv2.imshow('frame', thresh)
+
+        '''########################################### Begin Pipeline ##################################'''
+        thresh = otsu_threshold.adaptive_thresh_erode(img)
+        # cv2.imshow('frame', thresh)
+        # if cv2.waitKey(1) & 0xFF == ord('q'):
+        #     break
+
+        '''convert to contours'''
+        contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+        # img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)  # add this line
+
+        ''' Obtain mask of biggest contour (first one after sorting by area) '''
+        contours = sorted(contours, key=cv2.contourArea, reverse=True)[:20]
+
+        # visualize contours in color
+
+        for idx, c in enumerate(contours):
+            cur_color = colors[idx%3]
+            cv2.drawContours(color_img, contours, idx, cur_color, thickness=cv2.FILLED)  # todo what does thickness do?
+
+        cv2.imshow('frame', color_img)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
+
+
 
         frame_count += 1
 
