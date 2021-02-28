@@ -49,8 +49,8 @@ if __name__ == '__main__':
     union_masks_image = list(map(lambda x: np.where(x>0, 255, 0).astype(np.uint8),union_masks)) # show masks as image
     for idx, c in enumerate(union_masks_image):
         pass
-        # plt.imshow(c,cmap='gray')
-        # plt.show()
+        plt.imshow(c,cmap='gray')
+        plt.show()
 
     union_areas = list(map(lambda x: np.count_nonzero(x), union_masks))
 
@@ -79,7 +79,7 @@ if __name__ == '__main__':
         x, y = i.ravel()
         cv2.circle(img, (x, y), 3, 255, -1)
 
-    # plt.imshow(img), plt.show()
+    plt.imshow(img), plt.show()
 
     ''' mask corners with AR mask '''
     valid_corners = []
@@ -286,10 +286,12 @@ if __name__ == '__main__':
 
     plt.imshow(image_result_annotated), plt.show()
 
-    # sample mean in each box, if below some 200, 0, if above 200, 1
+
+    '''Sample mean in each box, if below some 200, 0, if above 200, 1'''
     outer_binary = [1 if val>200 else 0 for val in outer_means]
     inner_binary = [1 if val>200 else 0 for val in inner_means]
 
+    '''Shift to account for misoriented ar tag'''
     if outer_binary[0] == 1:
         inner_binary.insert(0, inner_binary.pop()) # shift twice
         inner_binary.insert(0, inner_binary.pop())
@@ -303,18 +305,6 @@ if __name__ == '__main__':
         inner_binary.insert(0, inner_binary.pop())
 
     tag_id = ''.join(str(e) for e in inner_binary) # convert list to string
-
-    # todo deal with mis-oriented ar tag
-
-
-
-
-    box_size = 20
-    box_centers_outer = [[62.5,62.5],[137.5,62.5],[62.5,137.5],[62.5,137.5]]
-
-
-    cv2.rectangle(image_result_annotated, (0, 0), (100, 100), (180, 180, 180), 1)
-
 
 
 
@@ -334,6 +324,9 @@ if __name__ == '__main__':
 
     # cv2.circle(original3, (ccs_test_point_divided[0], ccs_test_point_divided[1]), 3, (0, 180, 0), -1) # draw one point
     # plt.imshow(color_original), plt.show()
+
+    '''Draw Cube Edges'''
+    # cv2.line(color_original, (0, 0), (511, 511), (255, 0, 0), 1)
 
     '''Project cartoon image onto AR tag'''
     cartoon = cv2.imread('testudo.png',cv2.COLOR_BGR2RGB)
