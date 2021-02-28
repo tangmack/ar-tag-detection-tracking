@@ -5,16 +5,21 @@ from matplotlib import pyplot as plt
 
 
 # cap = cv2.VideoCapture('Tag0.mp4')
-cap = cv2.VideoCapture('Tag1.mp4')
-# cap = cv2.VideoCapture('multipleTags.mp4')
+# cap = cv2.VideoCapture('Tag1.mp4')
+# cap = cv2.VideoCapture('Tag2.mp4')
+cap = cv2.VideoCapture('multipleTags.mp4')
 
+frame_count = 0
 while(cap.isOpened()):
     ret, frame = cap.read()
 
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-    # cv2.imwrite("frame0_Tag1_grey.png", gray)
-    # break
+    filename = "./multipleTags_images/" + str(frame_count) + ".png"
+    cv2.imwrite(filename, frame)
+    print(frame_count)
+    frame_count += 1
+    continue
 
     ret, th1 = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
     th2 = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, \

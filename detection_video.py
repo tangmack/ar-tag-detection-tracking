@@ -22,35 +22,47 @@ def removearray(L,arr):
 
 
 if __name__ == '__main__':
-    use_video = True # video or single image
-    # single_image = cv2.imread('frame0_Tag0_grey.png', 0)
-    single_image = cv2.imread('frame0_Tag1_grey.png', 0)
-    # single_image = cv2.imread('frame0_Tag1_color.png', 0)
-    single_color_image = cv2.imread('frame0_Tag1_color.png', cv2.COLOR_BGR2RGB)
-
-    if use_video == True:
-        # cap = cv2.VideoCapture('Tag0.mp4')
-        # cap = cv2.VideoCapture('Tag1.mp4')
-        # cap = cv2.VideoCapture('Tag2.mp4')
-        cap = cv2.VideoCapture('multipleTags.mp4')
-    else:
-        single_image = cv2.imread('frame0_Tag1_color.png', 0)
 
 
-    colors = [(255,0,0), (0,255,0), (0,0,255)]
+    # todo Select Video or Single Image #############################
+    # use_video = False # single image
+    use_video = True # video
+    # single_image = cv2.imread('./Tag1_images/142.png')
+    single_image = cv2.imread('./Tag1_images/181.png')
+
+    img_n_rows = single_image.shape[0]
+    img_n_cols = single_image.shape[1]
+
+
+
+    # todo Select Video #############################################
+    cap = cv2.VideoCapture('Tag0.mp4')
+    # cap = cv2.VideoCapture('Tag1.mp4') #
+    # cap = cv2.VideoCapture('Tag2.mp4')
+    # cap = cv2.VideoCapture('multipleTags.mp4')
+
+
+    colors = [(0,0,255), (0,255,0), (255,0,0), (255,0,255)]
     frame_count = 0
     while (cap.isOpened()):
         if use_video == True:
             try:
                 ret, frame = cap.read()
                 img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                # color_img = frame.copy()
             except:
                 print("frame_count: ", frame_count)
                 break
         else:
-            img = single_image
-            color_img = single_color_image
+            frame = single_image.copy()
+            img = cv2.cvtColor(single_image.copy(), cv2.COLOR_BGR2GRAY)
+
+
+        # if run_specific_frame >= 0:
+        #     if frame_count != run_specific_frame:
+        #         frame_count += 1
+        #         continue
+        #     elif frame_count == run_specific_frame:
+        #         print("specific frame" + str(frame_count) + "reached")
 
 
         '''########################################### Begin Pipeline ##################################'''
@@ -59,7 +71,7 @@ if __name__ == '__main__':
         # cv2.imshow('frame', thresh)
         # if cv2.waitKey(1) & 0xFF == ord('q'):
         #     break
-
+        #
         # continue
 
         '''################################### Get at least white paper contours (and others) ###########################################'''
@@ -72,7 +84,7 @@ if __name__ == '__main__':
         # # Purely for visualization: visualize contours in color
         # color_img_initial_contours = frame.copy()
         # for idx, c in enumerate(contours):
-        #     cur_color = colors[idx%3]
+        #     cur_color = colors[idx%4]
         #     cv2.drawContours(color_img_initial_contours, contours, idx, cur_color, thickness=cv2.FILLED)
         # cv2.imshow('frame', color_img_initial_contours)
         # # cv2.waitKey(0)
@@ -150,7 +162,7 @@ if __name__ == '__main__':
         # color_image_all_corners = frame.copy()
         # for idx, i in enumerate(valid_corners):
         #     x, y = i.ravel()
-        #     cv2.circle(color_image_all_corners, (x, y), 3, colors[idx % 3], 1)
+        #     cv2.circle(color_image_all_corners, (x, y), 3, colors[idx % 4], 1)
         # cv2.imshow('frame', color_image_all_corners)
         # if cv2.waitKey(1) & 0xFF == ord('q'):
         #     break
@@ -177,38 +189,91 @@ if __name__ == '__main__':
         best_corners = list(sorted_n_valid_corners.reshape(-1, 2))[::-1][0:4]
 
         '''Display best 4 corners'''
-        # Purely for visualization
-        color_image_best_corners = frame.copy()
-        for idx, i in enumerate(best_corners):
-            x, y = i.ravel()
-            cv2.circle(color_image_best_corners, (x, y), 9, colors[idx % 3], -1)
-        cv2.imshow('frame', color_image_best_corners)
-        # if cv2.waitKey(1) & 0xFF == ord('q'):
+        # # Purely for visualization
+        # color_image_best_corners = frame.copy()
+        # for idx, i in enumerate(best_corners):
+        #     x, y = i.ravel()
+        #     cv2.circle(color_image_best_corners, (x, y), 9, colors[idx % 4], -1)
+        # cv2.imshow('frame', color_image_best_corners)
+        # if cv2.waitKey(0) & 0xFF == ord('q'):
         #     break
 
         # continue
+        '''################## Get at least all CW or CCW points ############################'''
+        frame_claimed_corners = [0, 0, 0, 0] # bottom right's claimed corner, bottom left's claimed corner, etc.
+        avail_corners = best_corners[:]
+        frame_corners = [  np.array([img_n_cols,img_n_rows]), np.array([0, img_n_rows]), np.array([0,0]), np.array([img_n_cols,0])  ]
+        for i in range(0,4):
+            corner_distances = [ np.linalg.norm(frame_corners[i]-X) for X in avail_corners] # measure distance to all avail corners
+            idx_min_distance = corner_distances.index(min(corner_distances)) # need index of minimum distance
+            frame_claimed_corners[i] = avail_corners.pop(idx_min_distance) # remove from avail_corners, and put into claimed corners
 
-        '''################################## Find Homography Matrix ###############################################'''
+        # Purely for visualization draw lines to corners
+        img_with_lines = frame.copy()
+        for i in range(0,4):
+            cv2.line(img_with_lines, (frame_corners[i][0], frame_corners[i][1]), (frame_claimed_corners[i][0],frame_claimed_corners[i][1]), colors[i % 4], 3)
+        cv2.imshow('frame', img_with_lines)
+        if cv2.waitKey(0) & 0xFF == ord('q'):
+            break
 
+        continue
+
+
+        '''################## Find Homography Matrix, and Projection Matrix ############################'''
+
+        skip_frame = False
         if len(best_corners) == 4:
             H = custom_math.calculate_homography(best_corners)
             P = custom_math.calculate_projection_matrix(H)
         else:
-            print("skipping math for frame: " + str(frame_count) )
+            skip_frame = True
+            print(str(frame_count) + " frame: skipping math"  )
 
-        # print(frame_count)
-        # if cv2.waitKey(0) & 0xFF == ord('q'):
+        # # Purely for visualization
+        # frame_count += 1
+        # if cv2.waitKey(1) & 0xFF == ord('q'):
         #     break
-
-        '''############################ Find Project Matrix ####################'''
-
-
+        # continue
 
 
         '''############################ Backproject 1 (first find unique corner) ####################'''
+        ''' Back project AR tag (wcs) onto image sensor (ccs)'''
+        skipped_pixels_in_backproject = False
+        number_skipped_pixels_in_backproject = 0
+        if skip_frame == False:
 
+            erosion = cv2.erode(ar_mask, kernel, iterations=1)
+            ar_contour_eroded_within = np.where(erosion > 0)
+            ar_contour_eroded_within = np.hstack((ar_contour_eroded_within[1].reshape(-1, 1), ar_contour_eroded_within[0].reshape(-1, 1)))
+
+            Pinv = np.linalg.pinv(P)
+            # ar_contour is an np array of shape (274,1,2) in row,col
+
+            ar_tag = np.zeros(shape=(220, 220), dtype=np.uint8)
+            # for colrow in ar_contour:
+            for colrow in ar_contour_eroded_within:
+                pix_projected = np.linalg.inv(H).dot(np.vstack((colrow.reshape(-1, 1), 1)))
+                pix_projected_normalized = pix_projected / pix_projected[2, 0]
+
+                try:
+                    ar_tag[round(float(pix_projected_normalized[1])), round(float(pix_projected_normalized[0]))] = img[colrow.reshape(-1, 1)[1], colrow.reshape(-1, 1)[0]]  # change color at projected row,col
+                except:
+                    number_skipped_pixels_in_backproject += 1
+                    skipped_pixels_in_backproject = True
+
+            if skipped_pixels_in_backproject == True:
+                print(str(frame_count) + " frame: skipped " + str(number_skipped_pixels_in_backproject) + " points in initial backprojection")
+
+            closing_kernel_size = 5
+            closing_kernel = np.ones((closing_kernel_size, closing_kernel_size), np.uint8)
+            closing = cv2.morphologyEx(ar_tag, cv2.MORPH_CLOSE, closing_kernel)
+
+        # Purely for visualization
+        cv2.imshow('frame', ar_tag)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
+
+
 
         frame_count += 1
 

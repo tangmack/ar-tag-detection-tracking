@@ -10,10 +10,15 @@ import homography_svd
 
 def calculate_homography(best_corners):
     # todo detect 4 unique corners in consistent way
+    # x1c = best_corners[0]  # ordering matches diagram
+    # x2c = best_corners[3]  # Note: (x,y) is exactly equal to (columns, rows) here
+    # x3c = best_corners[1]
+    # x4c = best_corners[2]
+
     x1c = best_corners[0]  # ordering matches diagram
-    x2c = best_corners[3]  # Note: (x,y) is exactly equal to (columns, rows) here
-    x3c = best_corners[1]
-    x4c = best_corners[2]
+    x2c = best_corners[1]  # Note: (x,y) is exactly equal to (columns, rows) here
+    x3c = best_corners[2]
+    x4c = best_corners[3]
 
     pixel_distance = 200.0
     w1c = np.array([0.0, 0.0])
