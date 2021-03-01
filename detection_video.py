@@ -37,9 +37,9 @@ if __name__ == '__main__':
 
 
     # todo Select Video #############################################
-    # cap = cv2.VideoCapture('Tag0.mp4')
+    cap = cv2.VideoCapture('Tag0.mp4')
     # cap = cv2.VideoCapture('Tag1.mp4') #
-    cap = cv2.VideoCapture('Tag2.mp4')
+    # cap = cv2.VideoCapture('Tag2.mp4')
     # cap = cv2.VideoCapture('multipleTags.mp4')
 
 
@@ -342,34 +342,44 @@ if __name__ == '__main__':
         xc = x + w / 2
         yc = y + h / 2
 
-        b = 1.5 * 25
-        s = 0.5 * 25
-        box_centers_outer = [[yc - b, xc - b], [yc - b, xc + b], [yc + b, xc + b],
-                             [yc + b, xc - b]]  # arranged according to diagram
-        box_centers_inner = [[yc - s, xc - s], [yc - s, xc + s], [yc + s, xc + s],
-                             [yc + s, xc - s]]  # arranged LSB first, until MSB
+        # b = 1.5 * 25
+        b_x = 1.5 * w/4
+        b_y = 1.5 * h/4
+        # s = 0.5 * 25
+        s_x = 0.5 * w/4
+        s_y = 0.5 * h/4
+
+        box_centers_outer = [[yc - b_y, xc - b_x], [yc - b_y, xc + b_x], [yc + b_y, xc + b_x],
+                             [yc + b_y, xc - b_x]]  # arranged according to diagram
+        box_centers_inner = [[yc - s_y, xc - s_x], [yc - s_y, xc + s_x], [yc + s_y, xc + s_x],
+                             [yc + s_y, xc - s_x]]  # arranged LSB first, until MSB
 
         # draw boxes
-        box_size = 25
         outer_means = []
         for outer in box_centers_outer:
-            x_n = round(outer[1] - s)
-            y_n = round(outer[0] - s)
-            h_n = 25
-            cv2.rectangle(image_result_annotated, (x_n, y_n), (x_n + h_n, y_n + h_n), (120, 120, 120), 1)
+            x_n = round(outer[1] - s_x)
+            y_n = round(outer[0] - s_y)
+            # h_n = 25
+            h_nx = w/4
+            h_ny = h/4
+            LR = (round(x_n + h_nx), round(y_n + h_ny))
+            cv2.rectangle(image_result_annotated, (x_n, y_n), LR, (120, 120, 120), 1)
 
-            pixel_block = image_result[y_n:y_n + h_n, x_n:x_n + h_n]
+            pixel_block = image_result[y_n:round(y_n + h_ny), x_n:round(x_n + h_nx)]
             mean = np.mean(pixel_block)
             outer_means.append(mean)
 
         inner_means = []
         for inner in box_centers_inner:
-            x_n = round(inner[1] - s)
-            y_n = round(inner[0] - s)
-            h_n = 25
-            cv2.rectangle(image_result_annotated, (x_n, y_n), (x_n + h_n, y_n + h_n), (90, 90, 90), 1)
+            x_n = round(inner[1] - s_x)
+            y_n = round(inner[0] - s_y)
+            # h_n = 25
+            h_nx = w/4
+            h_ny = h/4
+            LR = (round(x_n + h_nx), round(y_n + h_ny))
+            cv2.rectangle(image_result_annotated, (x_n, y_n), LR, (90, 90, 90), 1)
 
-            pixel_block = image_result[y_n:y_n + h_n, x_n:x_n + h_n]
+            pixel_block = image_result[y_n:round(y_n + h_ny), x_n:round(x_n + h_nx)]
             mean = np.mean(pixel_block)
             inner_means.append(mean)
 
