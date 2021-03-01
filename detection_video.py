@@ -8,6 +8,7 @@ import math
 import homography
 import homography_svd
 import custom_math
+import itertools
 
 
 def removearray(L,arr):
@@ -36,9 +37,9 @@ if __name__ == '__main__':
 
 
     # todo Select Video #############################################
-    cap = cv2.VideoCapture('Tag0.mp4')
+    # cap = cv2.VideoCapture('Tag0.mp4')
     # cap = cv2.VideoCapture('Tag1.mp4') #
-    # cap = cv2.VideoCapture('Tag2.mp4')
+    cap = cv2.VideoCapture('Tag2.mp4')
     # cap = cv2.VideoCapture('multipleTags.mp4')
 
 
@@ -189,33 +190,53 @@ if __name__ == '__main__':
         best_corners = list(sorted_n_valid_corners.reshape(-1, 2))[::-1][0:4]
 
         '''Display best 4 corners'''
-        # # Purely for visualization
-        # color_image_best_corners = frame.copy()
-        # for idx, i in enumerate(best_corners):
-        #     x, y = i.ravel()
-        #     cv2.circle(color_image_best_corners, (x, y), 9, colors[idx % 4], -1)
-        # cv2.imshow('frame', color_image_best_corners)
-        # if cv2.waitKey(0) & 0xFF == ord('q'):
+        print(frame_count)
+        # Purely for visualization
+        color_image_best_corners = frame.copy()
+        for idx, i in enumerate(best_corners):
+            x, y = i.ravel()
+            cv2.circle(color_image_best_corners, (x, y), 9, colors[idx % 4], -1)
+        cv2.imshow('frame', color_image_best_corners)
+        # if cv2.waitKey(1) & 0xFF == ord('q'):
         #     break
 
+        # frame_count += 1
         # continue
+
         '''################## Get at least all CW or CCW points ############################'''
-        frame_claimed_corners = [0, 0, 0, 0] # bottom right's claimed corner, bottom left's claimed corner, etc.
-        avail_corners = best_corners[:]
-        frame_corners = [  np.array([img_n_cols,img_n_rows]), np.array([0, img_n_rows]), np.array([0,0]), np.array([img_n_cols,0])  ]
-        for i in range(0,4):
-            corner_distances = [ np.linalg.norm(frame_corners[i]-X) for X in avail_corners] # measure distance to all avail corners
-            idx_min_distance = corner_distances.index(min(corner_distances)) # need index of minimum distance
-            frame_claimed_corners[i] = avail_corners.pop(idx_min_distance) # remove from avail_corners, and put into claimed corners
+        if len(best_corners) == 4:
+            # frame_claimed_corners = [ 0, 0, 0, 0] # bottom right's claimed corner, bottom left's claimed corner, etc.
+            # avail_corners = best_corners[:]
+            frame_corners = [  np.array([img_n_cols,img_n_rows]), np.array([0, img_n_rows]), np.array([0,0]), np.array([img_n_cols,0])  ]
+            # for i in range(0,4):
+            #     corner_distances = [ np.linalg.norm(frame_corners[i]-X) for X in avail_corners] # measure distance to all avail corners
+            #     idx_min_distance = corner_distances.index(min(corner_distances)) # need index of minimum distance
+            #     frame_claimed_corners[i] = avail_corners.pop(idx_min_distance) # remove from avail_corners, and put into claimed corners
 
-        # Purely for visualization draw lines to corners
-        img_with_lines = frame.copy()
-        for i in range(0,4):
-            cv2.line(img_with_lines, (frame_corners[i][0], frame_corners[i][1]), (frame_claimed_corners[i][0],frame_claimed_corners[i][1]), colors[i % 4], 3)
-        cv2.imshow('frame', img_with_lines)
-        if cv2.waitKey(0) & 0xFF == ord('q'):
-            break
+            # generate combinations
+            myiterable = itertools.permutations(best_corners, 4)
+            my_combinations_list = list(myiterable)
 
+            print(frame_count)
+            total_distances = [99999]*24
+            for idx in range(0,24): # loop through all 24, get distances. note that idx is index of combination
+                current_distances =  [np.linalg.norm(frame_corners[i]-my_combinations_list[idx][i]) for i in range(0,4)]
+                current_total_distance = sum(current_distances)
+                total_distances[idx] = current_total_distance
+
+            idx_min_total_dist = total_distances.index(min(total_distances)) # get idx of minimum total distance
+            frame_claimed_corners = my_combinations_list[idx_min_total_dist]
+
+
+            # Purely for visualization draw lines to corners
+            img_with_lines = frame.copy()
+            for i in range(0,4):
+                cv2.line(color_image_best_corners, (frame_corners[i][0], frame_corners[i][1]), (frame_claimed_corners[i][0],frame_claimed_corners[i][1]), colors[i % 4], 3)
+            cv2.imshow('frame', color_image_best_corners)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+
+        frame_count += 1
         continue
 
 
