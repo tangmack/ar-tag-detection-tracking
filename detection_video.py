@@ -38,8 +38,8 @@ if __name__ == '__main__':
 
     # todo Select Video #############################################
     # cap = cv2.VideoCapture('Tag0.mp4')
-    cap = cv2.VideoCapture('Tag1.mp4') #
-    # cap = cv2.VideoCapture('Tag2.mp4')
+    # cap = cv2.VideoCapture('Tag1.mp4') #
+    cap = cv2.VideoCapture('Tag2.mp4')
     # cap = cv2.VideoCapture('multipleTags.mp4')
 
 
@@ -313,13 +313,91 @@ if __name__ == '__main__':
         otsu, image_result = cv2.threshold(closing, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         # plt.imshow(image_result,cmap='gray'), plt.show()
 
-        # Purely for visualization
-        cv2.imshow('frame', image_result)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+        # # Purely for visualization
+        # cv2.imshow('frame', image_result)
+        # if cv2.waitKey(1) & 0xFF == ord('q'):
+        #     break
 
 
         '''################################################################################################'''
+
+        # todo make more robust than set grid, what if backprojected ar tag moves around
+        '''Get bounding rectangle'''
+        image_result_annotated = image_result.copy()
+
+        bp_contours, bp_hierarchy = cv2.findContours(image_result, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+        bp_cnt = bp_contours[0]
+        x, y, w, h = cv2.boundingRect(bp_cnt)  # todo what if multiple contours? does this deal with it
+        cv2.rectangle(image_result_annotated, (x, y), (x + w, y + h), (180, 180, 180), 2)
+
+        # Purely for visualization
+        # cv2.imshow('frame', image_result_annotated)
+        # if cv2.waitKey(1) & 0xFF == ord('q'):
+        #     break
+
+        '''################################################################################################'''
+
+        '''Draw and sample grid'''
+        # rectangle center is known
+        xc = x + w / 2
+        yc = y + h / 2
+
+        b = 1.5 * 25
+        s = 0.5 * 25
+        box_centers_outer = [[yc - b, xc - b], [yc - b, xc + b], [yc + b, xc + b],
+                             [yc + b, xc - b]]  # arranged according to diagram
+        box_centers_inner = [[yc - s, xc - s], [yc - s, xc + s], [yc + s, xc + s],
+                             [yc + s, xc - s]]  # arranged LSB first, until MSB
+
+        # draw boxes
+        box_size = 25
+        outer_means = []
+        for outer in box_centers_outer:
+            x_n = round(outer[1] - s)
+            y_n = round(outer[0] - s)
+            h_n = 25
+            cv2.rectangle(image_result_annotated, (x_n, y_n), (x_n + h_n, y_n + h_n), (120, 120, 120), 1)
+
+            pixel_block = image_result[y_n:y_n + h_n, x_n:x_n + h_n]
+            mean = np.mean(pixel_block)
+            outer_means.append(mean)
+
+        inner_means = []
+        for inner in box_centers_inner:
+            x_n = round(inner[1] - s)
+            y_n = round(inner[0] - s)
+            h_n = 25
+            cv2.rectangle(image_result_annotated, (x_n, y_n), (x_n + h_n, y_n + h_n), (90, 90, 90), 1)
+
+            pixel_block = image_result[y_n:y_n + h_n, x_n:x_n + h_n]
+            mean = np.mean(pixel_block)
+            inner_means.append(mean)
+
+        # Purely for visualization
+        cv2.imshow('frame', image_result_annotated)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+        '''Sample mean in each box, if below some 200, 0, if above 200, 1'''
+        outer_binary = [1 if val > 200 else 0 for val in outer_means]
+        inner_binary = [1 if val > 200 else 0 for val in inner_means]
+
+        '''Shift to account for misoriented ar tag'''
+        if outer_binary[0] == 1:
+            inner_binary.insert(0, inner_binary.pop())  # shift twice
+            inner_binary.insert(0, inner_binary.pop())
+        elif outer_binary[1] == 1:
+            inner_binary.insert(0, inner_binary.pop())  # shift once
+        elif outer_binary[2] == 1:
+            pass  # no need to shift
+        elif outer_binary[3] == 1:
+            inner_binary.insert(0, inner_binary.pop())  # shift three times
+            inner_binary.insert(0, inner_binary.pop())
+            inner_binary.insert(0, inner_binary.pop())
+
+        tag_id = ''.join(str(e) for e in inner_binary)  # convert list to string
+
+        print(tag_id)
 
 
 
