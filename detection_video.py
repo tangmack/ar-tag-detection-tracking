@@ -37,12 +37,12 @@ if __name__ == '__main__':
 
 
     # todo Select Video #############################################
-    cap = cv2.VideoCapture('Tag0.mp4')
-    # cap = cv2.VideoCapture('Tag1.mp4') #
-    # cap = cv2.VideoCapture('Tag2.mp4')
+    # cap = cv2.VideoCapture('Tag0.mp4')
+    # cap = cv2.VideoCapture('Tag1.mp4')
+    cap = cv2.VideoCapture('Tag2.mp4')
     # cap = cv2.VideoCapture('multipleTags.mp4')
 
-
+    cartoon = cv2.imread('testudo.png', cv2.COLOR_BGR2RGB)
     colors = [(0,0,255), (0,255,0), (255,0,0), (255,0,255)]
     frame_count = 0
     while (cap.isOpened()):
@@ -243,7 +243,7 @@ if __name__ == '__main__':
 
         skip_frame = False
         if len(best_corners) == 4:
-            H = custom_math.calculate_homography(best_corners)
+            H = custom_math.calculate_homography(best_corners,200)
             P = custom_math.calculate_projection_matrix(H)
         else:
             skip_frame = True
@@ -296,9 +296,9 @@ if __name__ == '__main__':
             closing = cv2.morphologyEx(ar_tag, cv2.MORPH_CLOSE, closing_kernel)
 
         # Purely for visualization
-        cv2.imshow('frame', ar_tag)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+        # cv2.imshow('frame', ar_tag)
+        # if cv2.waitKey(1) & 0xFF == ord('q'):
+        #     break
 
 
         '''#################################################################################################'''
@@ -335,7 +335,7 @@ if __name__ == '__main__':
         # if cv2.waitKey(1) & 0xFF == ord('q'):
         #     break
 
-        '''################################################################################################'''
+        '''############################## Draw and Sample Grid, variable grid size #################################'''
 
         '''Draw and sample grid'''
         # rectangle center is known
@@ -354,6 +354,7 @@ if __name__ == '__main__':
         box_centers_inner = [[yc - s_y, xc - s_x], [yc - s_y, xc + s_x], [yc + s_y, xc + s_x],
                              [yc + s_y, xc - s_x]]  # arranged LSB first, until MSB
 
+        # todo visualization and calculation occuring, want to separate out
         # draw boxes
         outer_means = []
         for outer in box_centers_outer:
@@ -384,9 +385,9 @@ if __name__ == '__main__':
             inner_means.append(mean)
 
         # Purely for visualization
-        cv2.imshow('frame', image_result_annotated)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+        # cv2.imshow('frame', image_result_annotated)
+        # if cv2.waitKey(1) & 0xFF == ord('q'):
+        #     break
 
         '''Sample mean in each box, if below some 200, 0, if above 200, 1'''
         outer_binary = [1 if val > 200 else 0 for val in outer_means]
@@ -410,6 +411,45 @@ if __name__ == '__main__':
         print(tag_id)
 
 
+        '''###### Find Homography Matrix and Projection Matrix Again, But with different Pixel Size in WCS ##########'''
+
+        skip_frame = False
+        if len(best_corners) == 4:
+            H = custom_math.calculate_homography(best_corners, 500)
+            P = custom_math.calculate_projection_matrix(H)
+        else:
+            skip_frame = True
+            print(str(frame_count) + " frame: skipping math"  )
+
+        # # Purely for visualization
+        # frame_count += 1
+        # if cv2.waitKey(1) & 0xFF == ord('q'):
+        #     break
+        # continue
+
+
+        '''############################## Project Cartoon Image onto ar tag #####################################'''
+        # Purely for visualization (so we can see the cartoon image projected on)
+        '''Project cartoon image onto AR tag'''
+        color_original = frame.copy()
+        try:
+            for i in range(0, cartoon.shape[0]):
+                for j in range(0, cartoon.shape[1]):
+                    pixel_projected = P.dot(np.array([j, i, 0, 1]).reshape(-1, 1))
+                    pixel_projected_normalized = pixel_projected / pixel_projected[2, 0]
+                    color_original[
+                        round(float(pixel_projected_normalized[1])), round(float(pixel_projected_normalized[0]))] = cartoon[i, j]  # change color at projected row,col
+
+        except:
+            print( str(frame_count) + " frame issue with projecting cartoon image on")
+
+        # plt.imshow(color_original), plt.show()
+        # plt.imshow(cv2.cvtColor(color_original, cv2.COLOR_BGR2RGB)), plt.show()
+
+        # Purely for visualization
+        cv2.imshow('frame', color_original)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
         frame_count += 1
 

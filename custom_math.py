@@ -8,7 +8,7 @@ import math
 import homography
 import homography_svd
 
-def calculate_homography(best_corners):
+def calculate_homography(best_corners, pixel_distance):
     # todo detect 4 unique corners in consistent way
     # x1c = best_corners[0]  # ordering matches diagram
     # x2c = best_corners[3]  # Note: (x,y) is exactly equal to (columns, rows) here
@@ -20,7 +20,7 @@ def calculate_homography(best_corners):
     x3c = best_corners[2]
     x4c = best_corners[3]
 
-    pixel_distance = 200.0
+    # pixel_distance = 200.0
     w1c = np.array([0.0, 0.0])
     w2c = np.array([pixel_distance, 0.0])
     w3c = np.array([pixel_distance, pixel_distance])  # found error, swapped w3 and w4 here!

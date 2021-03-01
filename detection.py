@@ -140,7 +140,7 @@ if __name__ == '__main__':
 
     pass
 
-    pixel_distance = 200.0
+    pixel_distance = 500
     w1c = np.array([0.0, 0.0])
     w2c = np.array([pixel_distance, 0.0])
     w3c = np.array([pixel_distance, pixel_distance]) # found error, swapped w3 and w4 here!
@@ -200,7 +200,7 @@ if __name__ == '__main__':
     P = K.dot( np.hstack((R, t)) )
 
     '''Use xc = P xw'''
-    wcs_test_point = np.array([0,200,-200,1]).reshape(-1,1)
+    wcs_test_point = np.array([0,pixel_distance,-pixel_distance,1]).reshape(-1,1)
 
     ccs_test_point = P.dot(  wcs_test_point )
     ccs_test_point_divided = ccs_test_point / ccs_test_point[2,0]
@@ -215,7 +215,7 @@ if __name__ == '__main__':
     Pinv = np.linalg.pinv(P)
     # ar_contour is an np array of shape (274,1,2) in row,col
 
-    ar_tag = np.zeros(shape=(201,201),dtype=np.uint8)
+    ar_tag = np.zeros(shape=(pixel_distance+1,pixel_distance+1),dtype=np.uint8)
     # for colrow in ar_contour:
     for colrow in ar_contour_eroded_within:
         # colrow_projective = np.
@@ -341,7 +341,7 @@ if __name__ == '__main__':
                 pixel_projected_normalized = pixel_projected / pixel_projected[2,0]
                 color_original[round(float(pixel_projected_normalized[1])),round(float(pixel_projected_normalized[0]))] = cartoon[i,j] # change color at projected row,col
 
-    # plt.imshow(color_original), plt.show()
-    # plt.imshow(cv2.cvtColor(color_original, cv2.COLOR_BGR2RGB)), plt.show()
+    plt.imshow(color_original), plt.show()
+    plt.imshow(cv2.cvtColor(color_original, cv2.COLOR_BGR2RGB)), plt.show()
 
     pass
