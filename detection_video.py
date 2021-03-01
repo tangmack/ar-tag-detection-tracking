@@ -38,8 +38,8 @@ if __name__ == '__main__':
 
     # todo Select Video #############################################
     # cap = cv2.VideoCapture('Tag0.mp4')
-    # cap = cv2.VideoCapture('Tag1.mp4') #
-    cap = cv2.VideoCapture('Tag2.mp4')
+    cap = cv2.VideoCapture('Tag1.mp4') #
+    # cap = cv2.VideoCapture('Tag2.mp4')
     # cap = cv2.VideoCapture('multipleTags.mp4')
 
 
@@ -190,13 +190,12 @@ if __name__ == '__main__':
         best_corners = list(sorted_n_valid_corners.reshape(-1, 2))[::-1][0:4]
 
         '''Display best 4 corners'''
-        print(frame_count)
-        # Purely for visualization
-        color_image_best_corners = frame.copy()
-        for idx, i in enumerate(best_corners):
-            x, y = i.ravel()
-            cv2.circle(color_image_best_corners, (x, y), 9, colors[idx % 4], -1)
-        cv2.imshow('frame', color_image_best_corners)
+        # # Purely for visualization
+        # color_image_best_corners = frame.copy()
+        # for idx, i in enumerate(best_corners):
+        #     x, y = i.ravel()
+        #     cv2.circle(color_image_best_corners, (x, y), 9, colors[idx % 4], -1)
+        # cv2.imshow('frame', color_image_best_corners)
         # if cv2.waitKey(1) & 0xFF == ord('q'):
         #     break
 
@@ -217,7 +216,7 @@ if __name__ == '__main__':
             myiterable = itertools.permutations(best_corners, 4)
             my_combinations_list = list(myiterable)
 
-            print(frame_count)
+            # print(frame_count)
             total_distances = [99999]*24
             for idx in range(0,24): # loop through all 24, get distances. note that idx is index of combination
                 current_distances =  [np.linalg.norm(frame_corners[i]-my_combinations_list[idx][i]) for i in range(0,4)]
@@ -226,18 +225,18 @@ if __name__ == '__main__':
 
             idx_min_total_dist = total_distances.index(min(total_distances)) # get idx of minimum total distance
             frame_claimed_corners = my_combinations_list[idx_min_total_dist]
+            best_corners = frame_claimed_corners
 
-
-            # Purely for visualization draw lines to corners
-            img_with_lines = frame.copy()
-            for i in range(0,4):
-                cv2.line(color_image_best_corners, (frame_corners[i][0], frame_corners[i][1]), (frame_claimed_corners[i][0],frame_claimed_corners[i][1]), colors[i % 4], 3)
-            cv2.imshow('frame', color_image_best_corners)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-
-        frame_count += 1
-        continue
+        #     # Purely for visualization draw lines to corners
+        #     img_with_lines = frame.copy()
+        #     for i in range(0,4):
+        #         cv2.line(color_image_best_corners, (frame_corners[i][0], frame_corners[i][1]), (frame_claimed_corners[i][0],frame_claimed_corners[i][1]), colors[i % 4], 3)
+        #     cv2.imshow('frame', color_image_best_corners)
+        #     if cv2.waitKey(1) & 0xFF == ord('q'):
+        #         break
+        #
+        # frame_count += 1
+        # continue
 
 
         '''################## Find Homography Matrix, and Projection Matrix ############################'''
@@ -285,6 +284,13 @@ if __name__ == '__main__':
             if skipped_pixels_in_backproject == True:
                 print(str(frame_count) + " frame: skipped " + str(number_skipped_pixels_in_backproject) + " points in initial backprojection")
 
+                # Purely for visualization
+                cv2.imshow('frame', ar_tag)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
+                frame_count += 1
+                continue
+
             closing_kernel_size = 5
             closing_kernel = np.ones((closing_kernel_size, closing_kernel_size), np.uint8)
             closing = cv2.morphologyEx(ar_tag, cv2.MORPH_CLOSE, closing_kernel)
@@ -293,6 +299,27 @@ if __name__ == '__main__':
         cv2.imshow('frame', ar_tag)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
+
+
+        '''#################################################################################################'''
+
+        ''' Threshold '''
+        # th_ar_tag = cv2.adaptiveThreshold(closing, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 41, 5)
+        # plt.imshow(th_ar_tag,cmap='gray'), plt.show()
+
+        # Applying Otsu's method setting the flag value into cv.THRESH_OTSU.
+        # Use a bimodal image as an input.
+        # Optimal threshold value is determined automatically.
+        otsu, image_result = cv2.threshold(closing, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        # plt.imshow(image_result,cmap='gray'), plt.show()
+
+        # Purely for visualization
+        cv2.imshow('frame', image_result)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+
+        '''################################################################################################'''
 
 
 
