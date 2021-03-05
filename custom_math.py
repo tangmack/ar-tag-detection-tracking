@@ -51,7 +51,7 @@ def calculate_homography(best_corners, pixel_distance):
 def calculate_projection_matrix(H):
     ''' Compute B = [r1 r2 t] '''
     K = np.array([[1406.08415449821, 0, 0], [2.20679787308599, 1417.99930662800, 0],
-                  [1014.13643417416, 566.347754321696, 1]])
+                  [1014.13643417416, 566.347754321696, 1]]).T
 
     # B_tilda = lambda_val * np.linalg.inv(K).dot( H )
     B_tilda = np.linalg.inv(K).dot(H)  # todo is this correct?

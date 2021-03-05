@@ -410,6 +410,29 @@ if __name__ == '__main__':
 
         print(tag_id)
 
+        '''#######################################################################################################'''
+        '''Draw Cube Vertices'''
+        # # convert numpy array to tuple
+        dist = 200  # cube edge length, measured in pixels
+        cube_points_low = [[0, 0, 0, 1], [dist, 0, 0, 1], [dist, dist, 0, 1], [0, dist, 0, 1]]
+        cube_points_high = [[0, 0, -dist, 1], [dist, 0, -dist, 1], [dist, dist, -dist, 1], [0, dist, -dist, 1]]
+        cube_points = cube_points_low + cube_points_high  # concatenate lists
+        # put into numpy array
+        cube_points_np = [np.array(elem).reshape(-1, 1) for elem in cube_points]
+        cube_points_projected = [P.dot(elem) for elem in cube_points_np]
+        cube_points_normalized = [elem / elem[2, 0] for elem in cube_points_projected]
+
+        color_original_cube = frame.copy()
+        for idx, point in enumerate(cube_points_normalized):
+            cv2.circle(color_original_cube, (point[0], point[1]), 3, colors[idx%4], -1)
+
+        # Purely for visualization
+        cv2.imshow('frame', color_original_cube)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+        frame_count += 1
+        continue
+
 
         '''###### Find Homography Matrix and Projection Matrix Again, But with different Pixel Size in WCS ##########'''
 

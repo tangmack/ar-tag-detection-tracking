@@ -16,7 +16,7 @@ if __name__ == '__main__':
     color_img = cv2.imread('frame0_Tag1_color.png',cv2.COLOR_BGR2RGB)
     original = img.copy()
     original2 = img.copy()
-    color_original = color_img.copy()
+    original3 = cv2.imread('frame0_Tag1_grey.png', 0)
 
     thresh = simple_threshold.adaptive_thresh_erode((img))
 
@@ -140,7 +140,7 @@ if __name__ == '__main__':
 
     pass
 
-    pixel_distance = 500
+    pixel_distance = 200
     w1c = np.array([0.0, 0.0])
     w2c = np.array([pixel_distance, 0.0])
     w3c = np.array([pixel_distance, pixel_distance]) # found error, swapped w3 and w4 here!
@@ -164,7 +164,7 @@ if __name__ == '__main__':
 
 
     ''' Compute B = [r1 r2 t] '''
-    K = np.array([[1406.08415449821, 0, 0], [2.20679787308599, 1417.99930662800, 0], [1014.13643417416, 566.347754321696, 1]])
+    K = np.array([[1406.08415449821, 0, 0], [2.20679787308599, 1417.99930662800, 0], [1014.13643417416, 566.347754321696, 1]]).T
 
     # B_tilda = lambda_val * np.linalg.inv(K).dot( H )
     B_tilda = np.linalg.inv(K).dot( H ) # todo is this correct?
@@ -315,7 +315,7 @@ if __name__ == '__main__':
 
     '''Draw Cube Vertices'''
     # # convert numpy array to tuple
-    dist = pixel_distance # cube edge length, measured in pixels
+    dist = 200 # cube edge length, measured in pixels
     cube_points_low = [[0,0,0,1],[dist,0,0,1],[dist,dist,0,1],[0,dist,0,1]]
     cube_points_high = [[0,0,-dist,1],[dist,0,-dist,1],[dist,dist,-dist,1],[0,dist,-dist,1]]
     cube_points = cube_points_low + cube_points_high # concatenate lists
@@ -325,10 +325,10 @@ if __name__ == '__main__':
     cube_points_normalized = [elem / elem[2,0] for elem in cube_points_projected]
 
     for point in cube_points_normalized:
-        cv2.circle(color_original, (point[0], point[1]), 3, (0, 180, 0), -1)
+        cv2.circle(original3, (point[0], point[1]), 3, (0, 180, 0), -1)
 
-    # cv2.circle(original3, (ccs_test_point_divided[0], ccs_test_point_divided[1]), 3, (0, 180, 0), -1) # draw one point
-    # plt.imshow(color_original), plt.show()
+    # cv2.circle(color_original, (ccs_test_point_divided[0], ccs_test_point_divided[1]), 3, (0, 180, 0), -1) # draw one point
+    plt.imshow(original3), plt.show()
 
     '''Draw Cube Edges'''
     # cv2.line(color_original, (0, 0), (511, 511), (255, 0, 0), 1)
