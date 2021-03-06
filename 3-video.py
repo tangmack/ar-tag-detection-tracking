@@ -26,10 +26,14 @@ if __name__ == '__main__':
 
 
     # todo Select Video or Single Image #############################
-    # use_video = False # single image
-    use_video = True # video
+    use_video = False # single image
+    # use_video = True # video
     # single_image = cv2.imread('./Tag1_images/142.png')
-    single_image = cv2.imread('./Tag1_images/181.png')
+    # single_image = cv2.imread('./Tag1_images/181.png')
+    # single_image = cv2.imread('./Tag0_images/379.png')
+    # single_image = cv2.imread('./Tag0_images/380.png')
+    # single_image = cv2.imread('./Tag2_images/671.png')
+    single_image = cv2.imread('./Tag2_images/565.png')
 
     img_n_rows = single_image.shape[0]
     img_n_cols = single_image.shape[1]
@@ -92,8 +96,75 @@ if __name__ == '__main__':
         # # cv2.waitKey(0)
         # if cv2.waitKey(1) & 0xFF == ord('q'):
         #     break
-
+        #
         # continue
+
+
+        '''################################### Filter by average color inside the external contours, should be light because of paper ###########################################'''
+        # todo keep things in order
+
+        means = []
+        stddevs = []
+        areas = []
+        paper_contours = []
+        difference_areas = []
+        num_defects = []
+        for idx, c in enumerate(contours):
+            mask1 = np.zeros(img.shape, np.uint8)
+            cv2.drawContours(mask1, contours, idx, 255, cv2.FILLED )
+
+            # cv2.imshow("mask1",mask1)
+            # cv2.waitKey(0)
+
+            mean_stddev = cv2.meanStdDev(img, mask=mask1)
+            means.append(mean_stddev[0])
+            stddevs.append(mean_stddev[1])
+
+            area = cv2.contourArea(c)
+            areas.append(area)
+
+            peri = cv2.arcLength(c, True)
+            approx = cv2.approxPolyDP(c, 0.1 * peri, True) # check number of corners
+
+            # rect = cv2.minAreaRect(c)
+            # area_bounding_rect = rect[1][0] * rect[1][1]
+            #
+            # difference_area = abs(area_bounding_rect - area)
+            # difference_areas.append(difference_area)
+
+            # hull = cv2.convexHull(c, returnPoints=False)
+            # defects = cv2.convexityDefects(c, hull)
+
+            # if type != None:
+            # num_defect = len(defects)
+            # num_defects.append(num_defect)
+            # else:
+            #     num_defect = 0
+            #     num_defects.append(num_defect)
+
+
+
+            # if area >= 8000 and mean_stddev[0] >= 220 and len(approx) == 4 and mean_stddev[1] <= 50:
+            # if area >= 8000 and mean_stddev[0] >= 220 and 20 <= mean_stddev[1] <= 60:
+            if area >= 8000 and mean_stddev[0] >= 220 and 20 <= mean_stddev[1] <= 60 and len(approx) == 4:
+            # if area >= 8000 and mean_stddev[0] >= 220:
+                paper_contours.append(c)
+
+
+        # # Purely for visualization: visualize contours in color
+        color_img_initial_contours = frame.copy()
+        for idx, c in enumerate(paper_contours):
+            cur_color = colors[idx%4]
+            cv2.drawContours(color_img_initial_contours, paper_contours, idx, cur_color, thickness=cv2.FILLED)
+        cv2.imshow('frame', color_img_initial_contours)
+        cv2.waitKey(0)
+        # if cv2.waitKey(1) & 0xFF == ord('q'):
+        #     break
+
+        print(frame_count)
+        frame_count += 1
+        continue
+
 
         '''########### Get second biggest contour within paper only (first biggest is paper itself) ################'''
         # todo for 3 ar tags, just pick 3 biggest instead of THE biggest, and then do same procedure FOR EACH
