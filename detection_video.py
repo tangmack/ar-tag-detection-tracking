@@ -420,11 +420,25 @@ if __name__ == '__main__':
         # put into numpy array
         cube_points_np = [np.array(elem).reshape(-1, 1) for elem in cube_points]
         cube_points_projected = [P.dot(elem) for elem in cube_points_np]
-        cube_points_normalized = [elem / elem[2, 0] for elem in cube_points_projected]
+        cpn = [elem / elem[2, 0] for elem in cube_points_projected] # cube points normalized
 
         color_original_cube = frame.copy()
-        for idx, point in enumerate(cube_points_normalized):
+        for idx, point in enumerate(cpn):
             cv2.circle(color_original_cube, (point[0], point[1]), 3, colors[idx%4], -1)
+
+        # Draw lines
+        cv2.line(color_original_cube, tuple(cpn[0])[0:2], tuple(cpn[1])[0:2], (255, 0, 0), 3)
+        cv2.line(color_original_cube, tuple(cpn[1])[0:2], tuple(cpn[2])[0:2], (255, 0, 0), 3)
+        cv2.line(color_original_cube, tuple(cpn[2])[0:2], tuple(cpn[3])[0:2], (255, 0, 0), 3)
+        cv2.line(color_original_cube, tuple(cpn[0])[0:2], tuple(cpn[3])[0:2], (255, 0, 0), 3)
+        cv2.line(color_original_cube, tuple(cpn[0])[0:2], tuple(cpn[4])[0:2], (255, 0, 0), 3)
+        cv2.line(color_original_cube, tuple(cpn[1])[0:2], tuple(cpn[5])[0:2], (255, 255, 0), 3)
+        cv2.line(color_original_cube, tuple(cpn[2])[0:2], tuple(cpn[6])[0:2], (0, 255, 0), 3)
+        cv2.line(color_original_cube, tuple(cpn[3])[0:2], tuple(cpn[7])[0:2], (0, 0, 255), 3)
+        cv2.line(color_original_cube, tuple(cpn[4])[0:2], tuple(cpn[5])[0:2], (0, 0, 255), 3)
+        cv2.line(color_original_cube, tuple(cpn[5])[0:2], tuple(cpn[6])[0:2], (0, 0, 255), 3)
+        cv2.line(color_original_cube, tuple(cpn[6])[0:2], tuple(cpn[7])[0:2], (0, 0, 255), 3)
+        cv2.line(color_original_cube, tuple(cpn[4])[0:2], tuple(cpn[7])[0:2], (0, 0, 255), 3)
 
         # Purely for visualization
         cv2.imshow('frame', color_original_cube)
