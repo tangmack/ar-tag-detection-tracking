@@ -37,7 +37,8 @@ if __name__ == '__main__':
     # single_image = cv2.imread('./Tag0_images/380.png')
     # single_image = cv2.imread('./Tag2_images/671.png')
     # single_image = cv2.imread('./Tag2_images/565.png')
-    single_image = cv2.imread('./multipleTags_images/0.png')
+    single_image = cv2.imread('./Tag2_images/650.png')
+    # single_image = cv2.imread('./multipleTags_images/0.png') # works
 
     img_n_rows = single_image.shape[0]
     img_n_cols = single_image.shape[1]
@@ -47,8 +48,8 @@ if __name__ == '__main__':
     # todo Select Video #############################################
     # cap = cv2.VideoCapture('Tag0.mp4')
     # cap = cv2.VideoCapture('Tag1.mp4')
-    cap = cv2.VideoCapture('Tag2.mp4')
-    # cap = cv2.VideoCapture('multipleTags.mp4')
+    # cap = cv2.VideoCapture('Tag2.mp4')
+    cap = cv2.VideoCapture('multipleTags.mp4')
 
     cartoon = cv2.imread('testudo.png', cv2.COLOR_BGR2RGB)
     colors = [(0,0,255), (0,255,0), (255,0,0), (255,0,255)]
@@ -176,9 +177,8 @@ if __name__ == '__main__':
         # todo for 3 ar tags, also change goodFeaturesToTrack number of points to look for (efficiency)
         # todo track centroid between images, verify movement was not too much
 
-        # for pp in paper_contours:
-
-        color_img_only_within_paper_contours = frame.copy()
+        # todo //visualize contours within paper 1
+        # color_img_only_within_paper_contours = frame.copy()
         for idx_p, p in enumerate(paper_contours):
 
             # color_img_current_paper_contour = frame.copy()
@@ -226,9 +226,11 @@ if __name__ == '__main__':
 
             # Purely visualization:
             # color_img_only_within_paper_contours = frame.copy()
-            for idx, c in enumerate(contours):
-                cv2.drawContours(color_img_only_within_paper_contours, contours, idx, colors[idx % 4],
-                                 thickness=cv2.FILLED)
+
+            # todo //visualize contours within paper 2
+            # for idx, c in enumerate(contours):
+            #     cv2.drawContours(color_img_only_within_paper_contours, contours, idx, colors[idx % 4], thickness=cv2.FILLED)
+
                 # print(frame_count)
             # cv2.imshow('frame', color_img_only_within_paper_contours)
             # # cv2.waitKey(0)
@@ -236,11 +238,12 @@ if __name__ == '__main__':
             # if cv2.waitKey(1) & 0xFF == ord('q'):
             #     break
 
-            continue
+            # continue
 
-        cv2.imshow('frame', color_img_only_within_paper_contours)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+        # todo //visualize contours within paper 3
+        # cv2.imshow('frame', color_img_only_within_paper_contours)
+        # if cv2.waitKey(1) & 0xFF == ord('q'):
+        #     break
 
 
 
@@ -251,13 +254,13 @@ if __name__ == '__main__':
             ''' Pick second largest remaining body'''
             ar_contour = contours[1]
             ar_mask = np.zeros(img.shape, dtype=np.uint8)
-            cv2.drawContours(ar_mask, contours, 2, 255, thickness=cv2.FILLED)
+            cv2.drawContours(ar_mask, contours, 1, 1, thickness=cv2.FILLED)
 
-            # Purely for visualization (need to change above drawing color from 1 to 255 for this to work)
-            cv2.imshow('frame', ar_mask)
+            # # Purely for visualization (need to change above drawing color from 1 to 255 for this to work)
+            # cv2.imshow('frame', ar_mask)
             # if cv2.waitKey(1) & 0xFF == ord('q'):
             #     break
-
+            #
             # continue
 
 
@@ -267,9 +270,45 @@ if __name__ == '__main__':
             kernel = np.ones((5, 5), np.uint8)
             dilation = cv2.dilate(ar_mask, kernel, iterations=1)
 
+            kernel_erosion = np.ones((5, 5), np.uint8)
+            erosion = cv2.erode(ar_mask, kernel_erosion, iterations=1)
+
+
             '''run corner detection'''
-            corners = cv2.goodFeaturesToTrack(img, 50, .1, 10) # option 1: slower corner deteciton
-            corners = np.int0(corners)
+            # # want to mask with inverse of paper contour
+            # paper_mask = np.zeros(img.shape,dtype=np.uint8)
+            # cv2.drawContours(paper_mask, paper_contours, idx_p, 1, thickness=cv2.FILLED)
+            # # paper_mask = cv2.bitwise_and(paper_mask, cv2.bitwise_not(erosion) )
+            # paper_mask = cv2.bitwise_and(dilation, cv2.bitwise_not(erosion) )
+            #
+            # # paper_mask_show = np.where(paper_mask>0, 255, 0)
+            # # cv2.imshow("paper_mask", paper_mask_show.astype(np.uint8))
+            # # cv2.waitKey(0)
+            #
+            #
+            # img_masked = img.copy()
+            # img_masked = img_masked * paper_mask
+            #
+            # cv2.imshow("img_masked", img_masked)
+            # cv2.waitKey(0)
+
+
+            # Sharpen image
+            # blur = cv2.GaussianBlur(img, (9, 9), 0)
+            # sharpened_image = cv2.addWeighted(img, 2.0, blur, -1.0, 0)
+            # cv2.imshow("sharpened_image", sharpened_image)
+            # cv2.waitKey(0)
+
+            peri = cv2.arcLength(ar_contour, True)
+            corners = cv2.approxPolyDP(ar_contour, 0.1 * peri, True) # check number of corners
+
+
+
+
+
+            # corners = cv2.goodFeaturesToTrack(img, 100, .1, 10) # option 1: slower corner deteciton
+            # corners = cv2.goodFeaturesToTrack(img, 1000, .0001, 10) # option 1: slower corner deteciton
+            # corners = np.int0(corners)
 
             # dst = cv2.cornerHarris(img, 3, 3, 0.2) # option 2: faster corner detection
             # # corners_tuple = np.where(dst > 0.1 * dst.max())
@@ -291,17 +330,17 @@ if __name__ == '__main__':
                 if dilation[y, x] > 0:
                     valid_corners.append(i)
 
-            ''' Display image with valid corners '''
-            # Purely for visualization
-            color_image_all_corners = frame.copy()
-            for idx, i in enumerate(valid_corners):
-                x, y = i.ravel()
-                cv2.circle(color_image_all_corners, (x, y), 3, colors[idx % 4], 1)
-            cv2.imshow('frame', color_image_all_corners)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-
-            continue
+            # ''' Display image with valid corners '''
+            # # Purely for visualization
+            # color_image_all_corners = frame.copy()
+            # for idx, i in enumerate(valid_corners):
+            #     x, y = i.ravel()
+            #     cv2.circle(color_image_all_corners, (x, y), 3, colors[idx % 4], 1)
+            # cv2.imshow('frame', color_image_all_corners)
+            # if cv2.waitKey(1) & 0xFF == ord('q'):
+            #     break
+            #
+            # continue
 
             ''' Pick 4 points furthest from centroid of ar mask'''
             M = cv2.moments(ar_mask) # calculate moments of binary image
@@ -323,17 +362,17 @@ if __name__ == '__main__':
             best_corners = list(sorted_n_valid_corners.reshape(-1, 2))[::-1][0:4]
 
             '''Display best 4 corners'''
-            # # Purely for visualization
-            # color_image_best_corners = frame.copy()
-            # for idx, i in enumerate(best_corners):
-            #     x, y = i.ravel()
-            #     cv2.circle(color_image_best_corners, (x, y), 9, colors[idx % 4], -1)
-            # cv2.imshow('frame', color_image_best_corners)
-            # if cv2.waitKey(1) & 0xFF == ord('q'):
-            #     break
+            # Purely for visualization
+            color_image_best_corners = frame.copy()
+            for idx, i in enumerate(best_corners):
+                x, y = i.ravel()
+                cv2.circle(color_image_best_corners, (x, y), 9, colors[idx % 4], -1)
+            cv2.imshow('frame', color_image_best_corners)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
 
-            # frame_count += 1
-            # continue
+            frame_count += 1
+            continue
 
             '''################## Get at least all CW or CCW points ############################'''
             if len(best_corners) == 4:

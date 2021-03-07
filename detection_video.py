@@ -124,7 +124,7 @@ if __name__ == '__main__':
         ar_mask = np.zeros(img.shape, dtype=np.uint8)
         cv2.drawContours( ar_mask , contours, 1, 1, thickness=cv2.FILLED)
 
-        # # Purely for visualization (need to change above drawing color from 1 to 255 for this to work)
+        # Purely for visualization (need to change above drawing color from 1 to 255 for this to work)
         # cv2.imshow('frame', ar_mask)
         # if cv2.waitKey(1) & 0xFF == ord('q'):
         #     break
@@ -191,17 +191,17 @@ if __name__ == '__main__':
         best_corners = list(sorted_n_valid_corners.reshape(-1, 2))[::-1][0:4]
 
         '''Display best 4 corners'''
-        # # Purely for visualization
-        # color_image_best_corners = frame.copy()
-        # for idx, i in enumerate(best_corners):
-        #     x, y = i.ravel()
-        #     cv2.circle(color_image_best_corners, (x, y), 9, colors[idx % 4], -1)
-        # cv2.imshow('frame', color_image_best_corners)
-        # if cv2.waitKey(1) & 0xFF == ord('q'):
-        #     break
+        # Purely for visualization
+        color_image_best_corners = frame.copy()
+        for idx, i in enumerate(best_corners):
+            x, y = i.ravel()
+            cv2.circle(color_image_best_corners, (x, y), 9, colors[idx % 4], -1)
+        cv2.imshow('frame', color_image_best_corners)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
-        # frame_count += 1
-        # continue
+        frame_count += 1
+        continue
 
         '''################## Get at least all CW or CCW points ############################'''
         if len(best_corners) == 4:
