@@ -302,6 +302,10 @@ if __name__ == '__main__':
             peri = cv2.arcLength(ar_contour, True)
             corners = cv2.approxPolyDP(ar_contour, 0.1 * peri, True) # check number of corners
 
+            corners = corners.astype(np.float32)
+
+
+
 
 
 
@@ -309,6 +313,17 @@ if __name__ == '__main__':
             # corners = cv2.goodFeaturesToTrack(img, 100, .1, 10) # option 1: slower corner deteciton
             # corners = cv2.goodFeaturesToTrack(img, 1000, .0001, 10) # option 1: slower corner deteciton
             # corners = np.int0(corners)
+
+
+            # Set the needed parameters to find the refined corners
+            winSize = (5, 5)
+            zeroZone = (-1, -1)
+            criteria = (cv2.TERM_CRITERIA_EPS + cv2.TermCriteria_COUNT, 40, 0.001)
+            corners = cv2.cornerSubPix(img, corners, winSize, zeroZone, criteria) # Calculate the refined corner locations
+
+
+
+
 
             # dst = cv2.cornerHarris(img, 3, 3, 0.2) # option 2: faster corner detection
             # # corners_tuple = np.where(dst > 0.1 * dst.max())
@@ -327,7 +342,7 @@ if __name__ == '__main__':
             valid_corners = []
             for i in corners:
                 x, y = i.ravel()
-                if dilation[y, x] > 0:
+                if dilation[int(y), int(x)] > 0:
                     valid_corners.append(i)
 
             # ''' Display image with valid corners '''
@@ -361,18 +376,18 @@ if __name__ == '__main__':
 
             best_corners = list(sorted_n_valid_corners.reshape(-1, 2))[::-1][0:4]
 
-            '''Display best 4 corners'''
-            # Purely for visualization
-            color_image_best_corners = frame.copy()
-            for idx, i in enumerate(best_corners):
-                x, y = i.ravel()
-                cv2.circle(color_image_best_corners, (x, y), 9, colors[idx % 4], -1)
-            cv2.imshow('frame', color_image_best_corners)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-
-            frame_count += 1
-            continue
+            # '''Display best 4 corners'''
+            # # Purely for visualization
+            # color_image_best_corners = frame.copy()
+            # for idx, i in enumerate(best_corners):
+            #     x, y = i.ravel()
+            #     cv2.circle(color_image_best_corners, (x, y), 9, colors[idx % 4], -1)
+            # cv2.imshow('frame', color_image_best_corners)
+            # if cv2.waitKey(1) & 0xFF == ord('q'):
+            #     break
+            #
+            # frame_count += 1
+            # continue
 
             '''################## Get at least all CW or CCW points ############################'''
             if len(best_corners) == 4:
