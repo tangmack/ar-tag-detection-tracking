@@ -29,6 +29,8 @@ if __name__ == '__main__':
 
 
     # todo Select Video or Single Image #############################
+    cartoon_mode = False
+
     # use_video = False # single image
     use_video = True # video
     # single_image = cv2.imread('./Tag1_images/142.png')
@@ -37,8 +39,8 @@ if __name__ == '__main__':
     # single_image = cv2.imread('./Tag0_images/380.png')
     # single_image = cv2.imread('./Tag2_images/671.png')
     # single_image = cv2.imread('./Tag2_images/565.png')
-    single_image = cv2.imread('./Tag2_images/650.png')
-    # single_image = cv2.imread('./multipleTags_images/0.png') # works
+    # single_image = cv2.imread('./Tag2_images/650.png')
+    single_image = cv2.imread('./multipleTags_images/0.png') # works
 
     img_n_rows = single_image.shape[0]
     img_n_cols = single_image.shape[1]
@@ -48,13 +50,16 @@ if __name__ == '__main__':
     # todo Select Video #############################################
     # cap = cv2.VideoCapture('Tag0.mp4')
     # cap = cv2.VideoCapture('Tag1.mp4')
-    # cap = cv2.VideoCapture('Tag2.mp4')
-    cap = cv2.VideoCapture('multipleTags.mp4')
+    cap = cv2.VideoCapture('Tag2.mp4')
+    # cap = cv2.VideoCapture('multipleTags.mp4')
 
     cartoon = cv2.imread('testudo.png', cv2.COLOR_BGR2RGB)
     colors = [(0,0,255), (0,255,0), (255,0,0), (255,0,255)]
     frame_count = 0
     past_corners = None
+    past_corners_list_unclaimed = []
+    past_corners_list_claimed = []
+    first_iteration_done = False
     while (cap.isOpened()):
         if use_video == True:
             try:
@@ -179,6 +184,7 @@ if __name__ == '__main__':
 
         # todo //visualize contours within paper 1
         # color_img_only_within_paper_contours = frame.copy()
+        color_original_cube = frame.copy()
         for idx_p, p in enumerate(paper_contours):
 
             # color_img_current_paper_contour = frame.copy()
@@ -428,8 +434,37 @@ if __name__ == '__main__':
             '''################## Order points to be similar to last frame ############################'''
 
             if len(best_corners) == 4:
-                if past_corners is None: # check if variable exists yet
-                    past_corners = best_corners # initialize past corners
+                # if past_corners is None: # check if variable exists yet
+                #     past_corners = best_corners # initialize past corners
+                if first_iteration_done == False:
+                    past_corners_list_unclaimed.append(  [(cX, cY), best_corners] )
+
+
+                if len(past_corners_list_unclaimed) == 1:
+                    past_corners = best_corners
+                    past_corners_list_claimed.append(past_corners_list_unclaimed.pop(0)) # move from one list to another
+
+                else:
+                    current_centroid = (cX,cY)
+                    centroid_distances = []
+                    for idx_U, elem_U in enumerate(past_corners_list_unclaimed): # figure out which center of mass is closest
+                        centroid_distances.append(  np.linalg.norm( tuple(np.subtract(elem_U[0], current_centroid))  )  )  #tuple(numpy.subtract((10, 10), (4, 4)))
+
+                    if len(past_corners_list_unclaimed) == 0:
+                        print("Zero length past_corners_list_unclaimed!!!")
+
+                    idx_min_centroid_dist = centroid_distances.index(min(centroid_distances))  # get idx of minimum centroid distance
+
+                    past_corners = past_corners_list_unclaimed[idx_min_centroid_dist][1] # set equal to payload of corners ie. index 1
+                    past_corners_list_unclaimed[idx_min_centroid_dist][0] = (cX, cY) # update with current centroid and corners
+                    past_corners_list_unclaimed[idx_min_centroid_dist][1] = best_corners # update with current centroid and corners
+                    past_corners_list_claimed.append(past_corners_list_unclaimed.pop(idx_min_centroid_dist)) # move (now updated centroid) from one list to another
+
+
+
+
+
+
 
                 # generate combinations
                 myiterable = itertools.permutations(best_corners, 4)
@@ -506,6 +541,8 @@ if __name__ == '__main__':
 
             if skip_frame == False:
                 past_corners = best_corners # note: this is related to section "Order points to be similar to last frame"
+
+
 
 
             # Purely for visualization
@@ -635,7 +672,7 @@ if __name__ == '__main__':
             cube_points_projected = [P.dot(elem) for elem in cube_points_np]
             cpn = [elem / elem[2, 0] for elem in cube_points_projected] # cube points normalized
 
-            color_original_cube = frame.copy()
+            # color_original_cube = frame.copy()
             for idx, point in enumerate(cpn):
                 cv2.circle(color_original_cube, (point[0], point[1]), 3, colors[idx%4], -1)
 
@@ -654,54 +691,69 @@ if __name__ == '__main__':
             cv2.line(color_original_cube, tuple(cpn[4])[0:2], tuple(cpn[7])[0:2], (0, 0, 255), 3)
 
             # Purely for visualization
-            cv2.imshow('frame', color_original_cube)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-            frame_count += 1
-            continue
-
-
-            '''###### Find Homography Matrix and Projection Matrix Again, But with different Pixel Size in WCS ##########'''
-
-            skip_frame = False
-            if len(best_corners) == 4:
-                H = custom_math.calculate_homography(best_corners, 500)
-                P = custom_math.calculate_projection_matrix(H)
-            else:
-                skip_frame = True
-                print(str(frame_count) + " frame: skipping math"  )
-
-            # # Purely for visualization
-            # frame_count += 1
+            # cv2.imshow('frame', color_original_cube)
             # if cv2.waitKey(1) & 0xFF == ord('q'):
             #     break
+            # frame_count += 1
             # continue
 
+            if (cartoon_mode == True):
 
-            '''############################## Project Cartoon Image onto ar tag #####################################'''
-            # Purely for visualization (so we can see the cartoon image projected on)
-            '''Project cartoon image onto AR tag'''
-            color_original = frame.copy()
-            try:
-                for i in range(0, cartoon.shape[0]):
-                    for j in range(0, cartoon.shape[1]):
-                        pixel_projected = P.dot(np.array([j, i, 0, 1]).reshape(-1, 1))
-                        pixel_projected_normalized = pixel_projected / pixel_projected[2, 0]
-                        color_original[
-                            round(float(pixel_projected_normalized[1])), round(float(pixel_projected_normalized[0]))] = cartoon[i, j]  # change color at projected row,col
 
-            except:
-                print( str(frame_count) + " frame issue with projecting cartoon image on")
+                '''###### Find Homography Matrix and Projection Matrix Again, But with different Pixel Size in WCS ##########'''
 
-            # plt.imshow(color_original), plt.show()
-            # plt.imshow(cv2.cvtColor(color_original, cv2.COLOR_BGR2RGB)), plt.show()
+                skip_frame = False
+                if len(best_corners) == 4:
+                    H = custom_math.calculate_homography(best_corners, 500)
+                    P = custom_math.calculate_projection_matrix(H)
+                else:
+                    skip_frame = True
+                    print(str(frame_count) + " frame: skipping math"  )
 
-            # Purely for visualization
-            cv2.imshow('frame', color_original)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+                # # Purely for visualization
+                # frame_count += 1
+                # if cv2.waitKey(1) & 0xFF == ord('q'):
+                #     break
+                # continue
 
-            frame_count += 1
+
+                '''############################## Project Cartoon Image onto ar tag #####################################'''
+                # Purely for visualization (so we can see the cartoon image projected on)
+                '''Project cartoon image onto AR tag'''
+                color_original = frame.copy()
+                try:
+                    for i in range(0, cartoon.shape[0]):
+                        for j in range(0, cartoon.shape[1]):
+                            pixel_projected = P.dot(np.array([j, i, 0, 1]).reshape(-1, 1))
+                            pixel_projected_normalized = pixel_projected / pixel_projected[2, 0]
+                            color_original[
+                                round(float(pixel_projected_normalized[1])), round(float(pixel_projected_normalized[0]))] = cartoon[i, j]  # change color at projected row,col
+
+                except:
+                    print( str(frame_count) + " frame issue with projecting cartoon image on")
+
+                # plt.imshow(color_original), plt.show()
+                # plt.imshow(cv2.cvtColor(color_original, cv2.COLOR_BGR2RGB)), plt.show()
+
+                # Purely for visualization
+                cv2.imshow('frame', color_original)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
+
+        frame_count += 1
+        first_iteration_done = True
+        if len(past_corners_list_claimed) > 0: # move any claimed corners back to unclaimed
+            for i_c in range(0,len(past_corners_list_claimed)):
+                past_corners_list_unclaimed.append(past_corners_list_claimed.pop()) # move back from one list to another
+
+        # Purely for visualization
+        cv2.imshow('frame', color_original_cube)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+        # frame_count += 1
+        # continue
+
+
 
     print("frame_count: ",frame_count)
 
