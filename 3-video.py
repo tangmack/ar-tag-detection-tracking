@@ -10,6 +10,8 @@ import homography_svd
 import custom_math
 import itertools
 
+import os
+
 
 def removearray(L,arr):
     ind = 0
@@ -28,8 +30,13 @@ def removearray(L,arr):
 if __name__ == '__main__':
 
 
+
     # todo Select Video or Single Image #############################
+    # cartoon_mode = True
     cartoon_mode = False
+
+    cube_mode = True
+    # cube_mode = False
 
     # use_video = False # single image
     use_video = True # video
@@ -40,7 +47,11 @@ if __name__ == '__main__':
     # single_image = cv2.imread('./Tag2_images/671.png')
     # single_image = cv2.imread('./Tag2_images/565.png')
     # single_image = cv2.imread('./Tag2_images/650.png')
-    single_image = cv2.imread('./multipleTags_images/0.png') # works
+    single_image = cv2.imread('./Tag2_images/556.png')
+    # single_image = cv2.imread('./multipleTags_images/0.png') # works
+
+
+
 
     img_n_rows = single_image.shape[0]
     img_n_cols = single_image.shape[1]
@@ -48,10 +59,27 @@ if __name__ == '__main__':
 
 
     # todo Select Video #############################################
-    # cap = cv2.VideoCapture('Tag0.mp4')
-    # cap = cv2.VideoCapture('Tag1.mp4')
-    cap = cv2.VideoCapture('Tag2.mp4')
-    # cap = cv2.VideoCapture('multipleTags.mp4')
+    # video_name = 'Tag0.mp4'
+    # video_name = 'Tag1.mp4'
+    video_name = 'Tag2.mp4'
+    # video_name = 'multipleTags.mp4'
+    cap = cv2.VideoCapture(video_name)
+
+    video_name_no_extension = video_name[:-4]
+    # video_name_no_extension = 'Tag0'
+    # video_name_no_extension = 'Tag1'
+    # video_name_no_extension = 'Tag2'
+    # video_name_no_extension = 'multipleTags'
+
+    if cube_mode == True:
+        mode_string = 'cube'
+
+    if cartoon_mode == True:
+        mode_string = 'cartoon'
+
+    # Define the codec and create VideoWriter object
+    fourcc = cv2.VideoWriter_fourcc(*'MP4V')
+    out = cv2.VideoWriter('annotated ' + mode_string + video_name, 0x7634706d, 30.0, (img_n_cols, img_n_rows))
 
     cartoon = cv2.imread('testudo.png', cv2.COLOR_BGR2RGB)
     colors = [(0,0,255), (0,255,0), (255,0,0), (255,0,255)]
@@ -185,6 +213,7 @@ if __name__ == '__main__':
         # todo //visualize contours within paper 1
         # color_img_only_within_paper_contours = frame.copy()
         color_original_cube = frame.copy()
+        color_original = frame.copy()
         for idx_p, p in enumerate(paper_contours):
 
             # color_img_current_paper_contour = frame.copy()
@@ -529,11 +558,11 @@ if __name__ == '__main__':
                     print(str(frame_count) + " frame: skipped " + str(number_skipped_pixels_in_backproject) + " points in initial backprojection")
 
                     # Purely for visualization
-                    cv2.imshow('frame', ar_tag)
-                    if cv2.waitKey(1) & 0xFF == ord('q'):
-                        break
-                    frame_count += 1
-                    continue
+                    # cv2.imshow('frame', ar_tag)
+                    # if cv2.waitKey(1) & 0xFF == ord('q'):
+                    #     break
+                    # frame_count += 1
+                    # continue
 
                 closing_kernel_size = 5
                 closing_kernel = np.ones((closing_kernel_size, closing_kernel_size), np.uint8)
@@ -553,192 +582,197 @@ if __name__ == '__main__':
 
             '''#################################################################################################'''
 
-            ''' Threshold '''
-            # th_ar_tag = cv2.adaptiveThreshold(closing, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 41, 5)
-            # plt.imshow(th_ar_tag,cmap='gray'), plt.show()
 
-            # Applying Otsu's method setting the flag value into cv.THRESH_OTSU.
-            # Use a bimodal image as an input.
-            # Optimal threshold value is determined automatically.
-            otsu, image_result = cv2.threshold(closing, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-            # plt.imshow(image_result,cmap='gray'), plt.show()
+            if skip_frame == False:
 
-            # # Purely for visualization
-            # cv2.imshow('frame', image_result)
-            # if cv2.waitKey(1) & 0xFF == ord('q'):
-            #     break
+                ''' Threshold '''
+                # th_ar_tag = cv2.adaptiveThreshold(closing, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 41, 5)
+                # plt.imshow(th_ar_tag,cmap='gray'), plt.show()
 
-
-            '''################################################################################################'''
-
-            # todo make more robust than set grid, what if backprojected ar tag moves around
-            '''Get bounding rectangle'''
-            image_result_annotated = image_result.copy()
-
-            bp_contours, bp_hierarchy = cv2.findContours(image_result, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
-            bp_cnt = bp_contours[0]
-            x, y, w, h = cv2.boundingRect(bp_cnt)  # todo what if multiple contours? does this deal with it
-            cv2.rectangle(image_result_annotated, (x, y), (x + w, y + h), (180, 180, 180), 2)
-
-            # Purely for visualization
-            # cv2.imshow('frame', image_result_annotated)
-            # if cv2.waitKey(1) & 0xFF == ord('q'):
-            #     break
-
-            '''############################## Draw and Sample Grid, variable grid size #################################'''
-
-            '''Draw and sample grid'''
-            # rectangle center is known
-            xc = x + w / 2
-            yc = y + h / 2
-
-            # b = 1.5 * 25
-            b_x = 1.5 * w/4
-            b_y = 1.5 * h/4
-            # s = 0.5 * 25
-            s_x = 0.5 * w/4
-            s_y = 0.5 * h/4
-
-            box_centers_outer = [[yc - b_y, xc - b_x], [yc - b_y, xc + b_x], [yc + b_y, xc + b_x],
-                                 [yc + b_y, xc - b_x]]  # arranged according to diagram
-            box_centers_inner = [[yc - s_y, xc - s_x], [yc - s_y, xc + s_x], [yc + s_y, xc + s_x],
-                                 [yc + s_y, xc - s_x]]  # arranged LSB first, until MSB
-
-            # todo visualization and calculation occuring, want to separate out
-            # draw boxes
-            outer_means = []
-            for outer in box_centers_outer:
-                x_n = round(outer[1] - s_x)
-                y_n = round(outer[0] - s_y)
-                # h_n = 25
-                h_nx = w/4
-                h_ny = h/4
-                LR = (round(x_n + h_nx), round(y_n + h_ny))
-                cv2.rectangle(image_result_annotated, (x_n, y_n), LR, (120, 120, 120), 1)
-
-                pixel_block = image_result[y_n:round(y_n + h_ny), x_n:round(x_n + h_nx)]
-                mean = np.mean(pixel_block)
-                outer_means.append(mean)
-
-            inner_means = []
-            for inner in box_centers_inner:
-                x_n = round(inner[1] - s_x)
-                y_n = round(inner[0] - s_y)
-                # h_n = 25
-                h_nx = w/4
-                h_ny = h/4
-                LR = (round(x_n + h_nx), round(y_n + h_ny))
-                cv2.rectangle(image_result_annotated, (x_n, y_n), LR, (90, 90, 90), 1)
-
-                pixel_block = image_result[y_n:round(y_n + h_ny), x_n:round(x_n + h_nx)]
-                mean = np.mean(pixel_block)
-                inner_means.append(mean)
-
-            # Purely for visualization
-            # cv2.imshow('frame', image_result_annotated)
-            # if cv2.waitKey(1) & 0xFF == ord('q'):
-            #     break
-
-            '''Sample mean in each box, if below some 200, 0, if above 200, 1'''
-            outer_binary = [1 if val > 200 else 0 for val in outer_means]
-            inner_binary = [1 if val > 200 else 0 for val in inner_means]
-
-            '''Shift to account for misoriented ar tag'''
-            if outer_binary[0] == 1:
-                inner_binary.insert(0, inner_binary.pop())  # shift twice
-                inner_binary.insert(0, inner_binary.pop())
-            elif outer_binary[1] == 1:
-                inner_binary.insert(0, inner_binary.pop())  # shift once
-            elif outer_binary[2] == 1:
-                pass  # no need to shift
-            elif outer_binary[3] == 1:
-                inner_binary.insert(0, inner_binary.pop())  # shift three times
-                inner_binary.insert(0, inner_binary.pop())
-                inner_binary.insert(0, inner_binary.pop())
-
-            tag_id = ''.join(str(e) for e in inner_binary)  # convert list to string
-
-            print(tag_id)
-
-            '''#######################################################################################################'''
-            '''Draw Cube Vertices'''
-            # # convert numpy array to tuple
-            dist = 200  # cube edge length, measured in pixels
-            cube_points_low = [[0, 0, 0, 1], [dist, 0, 0, 1], [dist, dist, 0, 1], [0, dist, 0, 1]]
-            cube_points_high = [[0, 0, -dist, 1], [dist, 0, -dist, 1], [dist, dist, -dist, 1], [0, dist, -dist, 1]]
-            cube_points = cube_points_low + cube_points_high  # concatenate lists
-            # put into numpy array
-            cube_points_np = [np.array(elem).reshape(-1, 1) for elem in cube_points]
-            cube_points_projected = [P.dot(elem) for elem in cube_points_np]
-            cpn = [elem / elem[2, 0] for elem in cube_points_projected] # cube points normalized
-
-            # color_original_cube = frame.copy()
-            for idx, point in enumerate(cpn):
-                cv2.circle(color_original_cube, (point[0], point[1]), 3, colors[idx%4], -1)
-
-            # Draw lines
-            cv2.line(color_original_cube, tuple(cpn[0])[0:2], tuple(cpn[1])[0:2], (255, 0, 0), 3)
-            cv2.line(color_original_cube, tuple(cpn[1])[0:2], tuple(cpn[2])[0:2], (255, 0, 0), 3)
-            cv2.line(color_original_cube, tuple(cpn[2])[0:2], tuple(cpn[3])[0:2], (255, 0, 0), 3)
-            cv2.line(color_original_cube, tuple(cpn[0])[0:2], tuple(cpn[3])[0:2], (255, 0, 0), 3)
-            cv2.line(color_original_cube, tuple(cpn[0])[0:2], tuple(cpn[4])[0:2], (255, 0, 0), 3)
-            cv2.line(color_original_cube, tuple(cpn[1])[0:2], tuple(cpn[5])[0:2], (255, 255, 0), 3)
-            cv2.line(color_original_cube, tuple(cpn[2])[0:2], tuple(cpn[6])[0:2], (0, 255, 0), 3)
-            cv2.line(color_original_cube, tuple(cpn[3])[0:2], tuple(cpn[7])[0:2], (0, 0, 255), 3)
-            cv2.line(color_original_cube, tuple(cpn[4])[0:2], tuple(cpn[5])[0:2], (0, 0, 255), 3)
-            cv2.line(color_original_cube, tuple(cpn[5])[0:2], tuple(cpn[6])[0:2], (0, 0, 255), 3)
-            cv2.line(color_original_cube, tuple(cpn[6])[0:2], tuple(cpn[7])[0:2], (0, 0, 255), 3)
-            cv2.line(color_original_cube, tuple(cpn[4])[0:2], tuple(cpn[7])[0:2], (0, 0, 255), 3)
-
-            # Purely for visualization
-            # cv2.imshow('frame', color_original_cube)
-            # if cv2.waitKey(1) & 0xFF == ord('q'):
-            #     break
-            # frame_count += 1
-            # continue
-
-            if (cartoon_mode == True):
-
-
-                '''###### Find Homography Matrix and Projection Matrix Again, But with different Pixel Size in WCS ##########'''
-
-                skip_frame = False
-                if len(best_corners) == 4:
-                    H = custom_math.calculate_homography(best_corners, 500)
-                    P = custom_math.calculate_projection_matrix(H)
-                else:
-                    skip_frame = True
-                    print(str(frame_count) + " frame: skipping math"  )
+                # Applying Otsu's method setting the flag value into cv.THRESH_OTSU.
+                # Use a bimodal image as an input.
+                # Optimal threshold value is determined automatically.
+                otsu, image_result = cv2.threshold(closing, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+                # plt.imshow(image_result,cmap='gray'), plt.show()
 
                 # # Purely for visualization
-                # frame_count += 1
+                # cv2.imshow('frame', image_result)
                 # if cv2.waitKey(1) & 0xFF == ord('q'):
                 #     break
-                # continue
 
 
-                '''############################## Project Cartoon Image onto ar tag #####################################'''
-                # Purely for visualization (so we can see the cartoon image projected on)
-                '''Project cartoon image onto AR tag'''
-                color_original = frame.copy()
-                try:
-                    for i in range(0, cartoon.shape[0]):
-                        for j in range(0, cartoon.shape[1]):
-                            pixel_projected = P.dot(np.array([j, i, 0, 1]).reshape(-1, 1))
-                            pixel_projected_normalized = pixel_projected / pixel_projected[2, 0]
-                            color_original[
-                                round(float(pixel_projected_normalized[1])), round(float(pixel_projected_normalized[0]))] = cartoon[i, j]  # change color at projected row,col
+                '''################################################################################################'''
 
-                except:
-                    print( str(frame_count) + " frame issue with projecting cartoon image on")
+                # todo make more robust than set grid, what if backprojected ar tag moves around
+                '''Get bounding rectangle'''
+                image_result_annotated = image_result.copy()
 
-                # plt.imshow(color_original), plt.show()
-                # plt.imshow(cv2.cvtColor(color_original, cv2.COLOR_BGR2RGB)), plt.show()
+                bp_contours, bp_hierarchy = cv2.findContours(image_result, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+                bp_cnt = bp_contours[0]
+                x, y, w, h = cv2.boundingRect(bp_cnt)  # todo what if multiple contours? does this deal with it
+                cv2.rectangle(image_result_annotated, (x, y), (x + w, y + h), (180, 180, 180), 2)
 
                 # Purely for visualization
-                cv2.imshow('frame', color_original)
-                if cv2.waitKey(1) & 0xFF == ord('q'):
-                    break
+                # cv2.imshow('frame', image_result_annotated)
+                # if cv2.waitKey(1) & 0xFF == ord('q'):
+                #     break
+
+                '''############################## Draw and Sample Grid, variable grid size #################################'''
+
+                '''Draw and sample grid'''
+                # rectangle center is known
+                xc = x + w / 2
+                yc = y + h / 2
+
+                # b = 1.5 * 25
+                b_x = 1.5 * w/4
+                b_y = 1.5 * h/4
+                # s = 0.5 * 25
+                s_x = 0.5 * w/4
+                s_y = 0.5 * h/4
+
+                box_centers_outer = [[yc - b_y, xc - b_x], [yc - b_y, xc + b_x], [yc + b_y, xc + b_x],
+                                     [yc + b_y, xc - b_x]]  # arranged according to diagram
+                box_centers_inner = [[yc - s_y, xc - s_x], [yc - s_y, xc + s_x], [yc + s_y, xc + s_x],
+                                     [yc + s_y, xc - s_x]]  # arranged LSB first, until MSB
+
+                # todo visualization and calculation occuring, want to separate out
+                # draw boxes
+                outer_means = []
+                for outer in box_centers_outer:
+                    x_n = round(outer[1] - s_x)
+                    y_n = round(outer[0] - s_y)
+                    # h_n = 25
+                    h_nx = w/4
+                    h_ny = h/4
+                    LR = (round(x_n + h_nx), round(y_n + h_ny))
+                    cv2.rectangle(image_result_annotated, (x_n, y_n), LR, (120, 120, 120), 1)
+
+                    pixel_block = image_result[y_n:round(y_n + h_ny), x_n:round(x_n + h_nx)]
+                    mean = np.mean(pixel_block)
+                    outer_means.append(mean)
+
+                inner_means = []
+                for inner in box_centers_inner:
+                    x_n = round(inner[1] - s_x)
+                    y_n = round(inner[0] - s_y)
+                    # h_n = 25
+                    h_nx = w/4
+                    h_ny = h/4
+                    LR = (round(x_n + h_nx), round(y_n + h_ny))
+                    cv2.rectangle(image_result_annotated, (x_n, y_n), LR, (90, 90, 90), 1)
+
+                    pixel_block = image_result[y_n:round(y_n + h_ny), x_n:round(x_n + h_nx)]
+                    mean = np.mean(pixel_block)
+                    inner_means.append(mean)
+
+                # Purely for visualization
+                # cv2.imshow('frame', image_result_annotated)
+                # if cv2.waitKey(1) & 0xFF == ord('q'):
+                #     break
+
+                '''Sample mean in each box, if below some 200, 0, if above 200, 1'''
+                outer_binary = [1 if val > 200 else 0 for val in outer_means]
+                inner_binary = [1 if val > 200 else 0 for val in inner_means]
+
+                '''Shift to account for misoriented ar tag'''
+                if outer_binary[0] == 1:
+                    inner_binary.insert(0, inner_binary.pop())  # shift twice
+                    inner_binary.insert(0, inner_binary.pop())
+                elif outer_binary[1] == 1:
+                    inner_binary.insert(0, inner_binary.pop())  # shift once
+                elif outer_binary[2] == 1:
+                    pass  # no need to shift
+                elif outer_binary[3] == 1:
+                    inner_binary.insert(0, inner_binary.pop())  # shift three times
+                    inner_binary.insert(0, inner_binary.pop())
+                    inner_binary.insert(0, inner_binary.pop())
+
+                tag_id = ''.join(str(e) for e in inner_binary)  # convert list to string
+
+                print(tag_id)
+
+                '''#######################################################################################################'''
+                if cube_mode == True:
+
+                    '''Draw Cube Vertices'''
+                    # # convert numpy array to tuple
+                    dist = 200  # cube edge length, measured in pixels
+                    cube_points_low = [[0, 0, 0, 1], [dist, 0, 0, 1], [dist, dist, 0, 1], [0, dist, 0, 1]]
+                    cube_points_high = [[0, 0, -dist, 1], [dist, 0, -dist, 1], [dist, dist, -dist, 1], [0, dist, -dist, 1]]
+                    cube_points = cube_points_low + cube_points_high  # concatenate lists
+                    # put into numpy array
+                    cube_points_np = [np.array(elem).reshape(-1, 1) for elem in cube_points]
+                    cube_points_projected = [P.dot(elem) for elem in cube_points_np]
+                    cpn = [elem / elem[2, 0] for elem in cube_points_projected] # cube points normalized
+
+                    # color_original_cube = frame.copy()
+                    for idx, point in enumerate(cpn):
+                        cv2.circle(color_original_cube, (point[0], point[1]), 3, colors[idx%4], -1)
+
+                    # Draw lines
+                    cv2.line(color_original_cube, tuple(cpn[0])[0:2], tuple(cpn[1])[0:2], (255, 0, 0), 3)
+                    cv2.line(color_original_cube, tuple(cpn[1])[0:2], tuple(cpn[2])[0:2], (255, 0, 0), 3)
+                    cv2.line(color_original_cube, tuple(cpn[2])[0:2], tuple(cpn[3])[0:2], (255, 0, 0), 3)
+                    cv2.line(color_original_cube, tuple(cpn[0])[0:2], tuple(cpn[3])[0:2], (255, 0, 0), 3)
+                    cv2.line(color_original_cube, tuple(cpn[0])[0:2], tuple(cpn[4])[0:2], (255, 0, 0), 3)
+                    cv2.line(color_original_cube, tuple(cpn[1])[0:2], tuple(cpn[5])[0:2], (255, 255, 0), 3)
+                    cv2.line(color_original_cube, tuple(cpn[2])[0:2], tuple(cpn[6])[0:2], (0, 255, 0), 3)
+                    cv2.line(color_original_cube, tuple(cpn[3])[0:2], tuple(cpn[7])[0:2], (0, 0, 255), 3)
+                    cv2.line(color_original_cube, tuple(cpn[4])[0:2], tuple(cpn[5])[0:2], (0, 0, 255), 3)
+                    cv2.line(color_original_cube, tuple(cpn[5])[0:2], tuple(cpn[6])[0:2], (0, 0, 255), 3)
+                    cv2.line(color_original_cube, tuple(cpn[6])[0:2], tuple(cpn[7])[0:2], (0, 0, 255), 3)
+                    cv2.line(color_original_cube, tuple(cpn[4])[0:2], tuple(cpn[7])[0:2], (0, 0, 255), 3)
+
+                    # Purely for visualization
+                    # cv2.imshow('frame', color_original_cube)
+                    # if cv2.waitKey(1) & 0xFF == ord('q'):
+                    #     break
+                    # frame_count += 1
+                    # continue
+
+                if (cartoon_mode == True):
+
+
+                    '''###### Find Homography Matrix and Projection Matrix Again, But with different Pixel Size in WCS ##########'''
+
+                    skip_frame = False
+                    if len(best_corners) == 4:
+                        H = custom_math.calculate_homography(best_corners, 500)
+                        P = custom_math.calculate_projection_matrix(H)
+                    else:
+                        skip_frame = True
+                        print(str(frame_count) + " frame: skipping math"  )
+
+                    # # Purely for visualization
+                    # frame_count += 1
+                    # if cv2.waitKey(1) & 0xFF == ord('q'):
+                    #     break
+                    # continue
+
+
+                    '''############################## Project Cartoon Image onto ar tag #####################################'''
+                    # Purely for visualization (so we can see the cartoon image projected on)
+                    '''Project cartoon image onto AR tag'''
+                    # color_original = frame.copy()
+                    try:
+                        for i in range(0, cartoon.shape[0]):
+                            for j in range(0, cartoon.shape[1]):
+                                pixel_projected = P.dot(np.array([j, i, 0, 1]).reshape(-1, 1))
+                                pixel_projected_normalized = pixel_projected / pixel_projected[2, 0]
+                                color_original[
+                                    round(float(pixel_projected_normalized[1])), round(float(pixel_projected_normalized[0]))] = cartoon[i, j]  # change color at projected row,col
+
+                    except:
+                        print( str(frame_count) + " frame issue with projecting cartoon image on")
+
+                    # plt.imshow(color_original), plt.show()
+                    # plt.imshow(cv2.cvtColor(color_original, cv2.COLOR_BGR2RGB)), plt.show()
+
+                    # # Purely for visualization
+                    # cv2.imshow('frame', color_original)
+                    # if cv2.waitKey(1) & 0xFF == ord('q'):
+                    #     break
 
         frame_count += 1
         first_iteration_done = True
@@ -746,12 +780,32 @@ if __name__ == '__main__':
             for i_c in range(0,len(past_corners_list_claimed)):
                 past_corners_list_unclaimed.append(past_corners_list_claimed.pop()) # move back from one list to another
 
-        # Purely for visualization
-        cv2.imshow('frame', color_original_cube)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-        # frame_count += 1
-        # continue
+        if cube_mode == True:
+
+            # Purely for visualization
+            cv2.imshow('frame', color_original_cube)
+
+            if not os.path.exists('./' + video_name_no_extension + '_annotated_' + mode_string + '/'):
+                os.makedirs('./' + video_name_no_extension + '_annotated_' + mode_string + '/')
+
+            cv2.imwrite('./' + video_name_no_extension + '_annotated_' + mode_string + '/' + str(frame_count) + ' annotated ' + mode_string + '.png', color_original_cube)
+            out.write(color_original_cube)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+            # frame_count += 1
+            # continue
+
+        if cartoon_mode == True:
+            # Purely for visualization
+            cv2.imshow('frame', color_original)
+
+            if not os.path.exists('./' + video_name_no_extension + '_annotated_' + mode_string + '/'):
+                os.makedirs('./' + video_name_no_extension + '_annotated_' + mode_string + '/')
+
+            cv2.imwrite('./' + video_name_no_extension + '_annotated_' + mode_string + '/' + str(frame_count) + ' annotated ' + mode_string + '.png', color_original)
+            out.write(color_original)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
 
 
 
